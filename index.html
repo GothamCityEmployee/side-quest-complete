@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Side Quest Complete — Purveyor of Quality Old S#!t. Retro games, toys, collectables, and more in New Bedford, MA." />
+  <meta name="theme-color" content="#111111" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Side Quest Complete" />
+  <meta property="og:description" content="Purveyor of Quality Old S#!t — Retro games, toys & collectables. New Bedford, MA." />
+  <meta property="og:type" content="website" />
+
+  <title>Side Quest Complete — Purveyor of Quality Old S#!t</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ─── Cart Overlay ─────────────────────────────────────────────────────── -->
+  <div id="cart-overlay" class="cart-overlay" role="presentation"></div>
+
+  <!-- ─── Cart Drawer ──────────────────────────────────────────────────────── -->
+  <aside id="cart-drawer" class="cart-drawer" aria-label="Shopping cart" aria-modal="true">
+    <div class="cart-header">
+      <span class="cart-header-title">Your Cart</span>
+      <button id="cart-close" class="cart-close-btn" aria-label="Close cart">✕</button>
+    </div>
+
+    <div id="cart-items" class="cart-items" role="list">
+      <!-- Rendered by main.js -->
+    </div>
+
+    <div class="cart-footer">
+      <div class="cart-subtotal">
+        <span class="cart-subtotal-label">Subtotal</span>
+        <span id="cart-total" class="cart-subtotal-amount">$0.00</span>
+      </div>
+      <a href="#square-checkout" class="btn-checkout" role="button">
+        Proceed to Checkout
+      </a>
+      <p class="cart-note">Secure checkout powered by Square</p>
+    </div>
+  </aside>
+
+  <!-- ─── Product Modal ────────────────────────────────────────────────────── -->
+  <div id="product-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-name">
+    <div class="modal-inner">
+      <div class="modal-image">
+        <!-- bg set by JS -->
+        <span class="modal-emoji" role="img" aria-label="Product image"></span>
+        <button id="modal-close" class="modal-close" aria-label="Close product detail">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-top">
+          <span class="modal-category"></span>
+          <span class="modal-badge"></span>
+        </div>
+        <h2 id="modal-name" class="modal-name"></h2>
+        <div class="modal-price"></div>
+        <p class="modal-description"></p>
+        <button class="modal-add-cart">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Header ───────────────────────────────────────────────────────────── -->
+  <header id="site-header" role="banner">
+    <nav class="nav container" aria-label="Main navigation">
+
+      <!-- Logo -->
+      <a href="#hero" class="nav-logo" aria-label="Side Quest Complete — Home">
+        <img
+          src="../logos/IMG_0216_Original.PNG"
+          alt="Side Quest Complete logo"
+          width="40"
+          height="40"
+        />
+        <span class="nav-logo-text">Side Quest<br>Complete</span>
+      </a>
+
+      <!-- Nav links -->
+      <ul class="nav-links" id="nav-links" role="list">
+        <li><a href="#shop">Shop</a></li>
+        <li><a href="#categories">Browse</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#blog">Blog</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+
+      <div class="nav-right">
+        <!-- Cart -->
+        <button id="cart-btn" class="cart-btn" aria-label="Open shopping cart">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span>Cart</span>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-label="Items in cart">0</span>
+        </button>
+
+        <!-- Mobile hamburger -->
+        <button
+          id="menu-toggle"
+          class="menu-toggle"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="nav-links"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+    </nav>
+  </header>
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────────────── -->
+  <section id="hero" aria-label="Welcome">
+    <div class="hero-content">
+      <div class="hero-mascot" aria-hidden="true">!</div>
+      <p class="hero-eyebrow">New Bedford, MA</p>
+      <h1 class="hero-title">
+        Side Quest<br><span class="accent">Complete</span>
+      </h1>
+      <p class="hero-tagline">" Purveyor of Quality Old S#!t "</p>
+      <p class="hero-desc">
+        Retro games, action figures, collectables, and board games from the eras
+        you actually care about. Handpicked, tested, and ready to find their next
+        home.
+      </p>
+      <a href="#shop" class="hero-cta">
+        <span>&#9654;</span>
+        Shop Now
+      </a>
+    </div>
+
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </section>
+
+  <div class="pixel-divider" role="presentation"></div>
+
+  <!-- ─── Featured Products ─────────────────────────────────────────────────── -->
+  <section id="shop" class="section" aria-label="Featured products">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Featured Products</h2>
+        <p class="section-sub">Hand-selected picks from the latest inventory drop.</p>
+      </div>
+      <div id="products-grid" role="list" aria-label="Product listings">
+        <!-- Rendered by main.js -->
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider" role="presentation"></div>
+
+  <!-- ─── Categories ───────────────────────────────────────────────────────── -->
+  <section id="categories" class="section" aria-label="Browse by category">
+    <div class="container">
+      <div class="section-header centered">
+        <h2 class="section-title">Browse by Category</h2>
+        <p class="section-sub">Find exactly what you're questing for.</p>
+      </div>
+      <div class="categories-grid" role="list">
+
+        <div class="category-tile" data-filter="gi-joe" role="button" tabindex="0" aria-label="Browse G.I. Joe">
+          <span class="category-icon" aria-hidden="true">🪖</span>
+          <span class="category-name">G.I. Joe</span>
+        </div>
+
+        <div class="category-tile" data-filter="pokemon" role="button" tabindex="0" aria-label="Browse Pokémon">
+          <span class="category-icon" aria-hidden="true">⚡</span>
+          <span class="category-name">Pokémon</span>
+        </div>
+
+        <div class="category-tile" data-filter="tmnt" role="button" tabindex="0" aria-label="Browse TMNT">
+          <span class="category-icon" aria-hidden="true">🐢</span>
+          <span class="category-name">TMNT</span>
+        </div>
+
+        <div class="category-tile" data-filter="thundercats" role="button" tabindex="0" aria-label="Browse Thundercats">
+          <span class="category-icon" aria-hidden="true">🦁</span>
+          <span class="category-name">Thundercats</span>
+        </div>
+
+        <div class="category-tile" data-filter="video-games" role="button" tabindex="0" aria-label="Browse Retro Video Games">
+          <span class="category-icon" aria-hidden="true">🎮</span>
+          <span class="category-name">Retro Video Games</span>
+        </div>
+
+        <div class="category-tile" data-filter="collectables" role="button" tabindex="0" aria-label="Browse Collectables">
+          <span class="category-icon" aria-hidden="true">🏆</span>
+          <span class="category-name">Collectables</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider" role="presentation"></div>
+
+  <!-- ─── About ────────────────────────────────────────────────────────────── -->
+  <section id="about" class="section" aria-label="About Side Quest Complete">
+    <div class="container">
+      <div class="about-inner">
+
+        <div class="about-logo-wrap">
+          <img
+            src="../logos/IMG_0216_Original.PNG"
+            alt="Side Quest Complete — New Bedford, MA"
+            class="about-logo"
+            width="320"
+            height="320"
+            loading="lazy"
+          />
+        </div>
+
+        <div class="about-text">
+          <h2 class="section-title">Our Story</h2>
+          <p>
+            Side Quest Complete is a retro toy, game, and collectables shop born out of
+            a lifelong obsession with the golden eras of gaming and pop culture. We're
+            based in New Bedford, MA — and we're serious about the stuff we sell.
+          </p>
+          <p>
+            Every item in our inventory is handpicked, tested, and genuinely loved before
+            it hits the shelf. We're not a warehouse operation. We're collectors who happen
+            to have too much good stuff and want to find it the right homes.
+          </p>
+          <p>
+            Whether you're chasing a childhood memory or building a serious collection,
+            we've got something for you. Stop by, dig through, and complete your side quest.
+          </p>
+
+          <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
+            <div class="about-detail">
+              <span class="icon">📍</span>
+              <span>New Bedford, MA 02740</span>
+            </div>
+            <div class="about-detail">
+              <span class="icon">📸</span>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">
+                Follow us on Instagram
+              </a>
+            </div>
+            <div class="about-detail">
+              <span class="icon">🕹️</span>
+              <span>Retro games since forever</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider" role="presentation"></div>
+
+  <!-- ─── Blog ─────────────────────────────────────────────────────────────── -->
+  <section id="blog" class="section" aria-label="Blog">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">From the Vault</h2>
+        <p class="section-sub">Retro gaming thoughts, finds, and lore.</p>
+      </div>
+      <div class="blog-grid">
+
+        <article class="blog-card">
+          <div class="blog-thumb" style="background: linear-gradient(135deg, #0d1b2a, #1b263b);">🎮</div>
+          <div class="blog-body">
+            <div class="blog-meta">
+              <span class="blog-tag">Retro Gaming</span>
+              <span class="blog-date">Mar 10, 2025</span>
+            </div>
+            <h3 class="blog-title">Top 10 N64 Games You Totally Forgot Existed</h3>
+            <p class="blog-excerpt">
+              Everyone knows Ocarina of Time and Mario 64. But the N64 library runs deep —
+              and some of its weirdest, most underrated gems are sitting in bins at shops
+              like ours right now for next to nothing. Here's our list.
+            </p>
+            <span class="blog-read-more" aria-label="Read more about N64 games">Read More →</span>
+          </div>
+        </article>
+
+        <article class="blog-card">
+          <div class="blog-thumb" style="background: linear-gradient(135deg, #1a472a, #40916c);">👾</div>
+          <div class="blog-body">
+            <div class="blog-meta">
+              <span class="blog-tag">Hardware</span>
+              <span class="blog-date">Feb 22, 2025</span>
+            </div>
+            <h3 class="blog-title">Why the Original Game Boy Still Slaps in 2025</h3>
+            <p class="blog-excerpt">
+              No backlight. Four shades of greenish gray. A battery life measured in AA count.
+              And yet — the original DMG-01 Game Boy remains one of the most satisfying
+              gaming experiences ever made. Here's why we keep stocking them.
+            </p>
+            <span class="blog-read-more" aria-label="Read more about Game Boy">Read More →</span>
+          </div>
+        </article>
+
+        <article class="blog-card">
+          <div class="blog-thumb" style="background: linear-gradient(135deg, #f6d365, #fda085);">✨</div>
+          <div class="blog-body">
+            <div class="blog-meta">
+              <span class="blog-tag">Collecting</span>
+              <span class="blog-date">Jan 15, 2025</span>
+            </div>
+            <h3 class="blog-title">How to Spot a Fake Pokémon Card (Without Destroying It)</h3>
+            <p class="blog-excerpt">
+              The counterfeit Pokémon card market has gotten scarily good. But there are
+              still telltale signs — texture, print quality, light test, even the smell —
+              that separate originals from fakes. Our guide for collectors.
+            </p>
+            <span class="blog-read-more" aria-label="Read more about spotting fake Pokémon cards">Read More →</span>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider" role="presentation"></div>
+
+  <!-- ─── Footer ────────────────────────────────────────────────────────────── -->
+  <footer id="contact" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+
+        <!-- Brand -->
+        <div class="footer-brand">
+          <div class="nav-logo" style="margin-bottom: 16px;">
+            <img
+              src="../logos/IMG_0216_Original.PNG"
+              alt="Side Quest Complete"
+              width="36"
+              height="36"
+              loading="lazy"
+            />
+            <span class="nav-logo-text">Side Quest<br>Complete</span>
+          </div>
+          <p>Purveyor of quality old s#!t since we couldn't stop buying it ourselves.</p>
+          <div class="footer-social">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">📸</a>
+            <a href="mailto:hello@sidequestcomplete.com" class="social-link" aria-label="Email">✉️</a>
+          </div>
+        </div>
+
+        <!-- Shop links -->
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="#shop" data-filter="gi-joe">G.I. Joe</a></li>
+            <li><a href="#shop" data-filter="pokemon">Pokémon</a></li>
+            <li><a href="#shop" data-filter="tmnt">TMNT</a></li>
+            <li><a href="#shop" data-filter="thundercats">Thundercats</a></li>
+            <li><a href="#shop" data-filter="video-games">Retro Video Games</a></li>
+            <li><a href="#shop" data-filter="collectables">Collectables</a></li>
+          </ul>
+        </div>
+
+        <!-- Info links -->
+        <div class="footer-col">
+          <h4>Info</h4>
+          <ul>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#">Shipping Policy</a></li>
+            <li><a href="#">Returns</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact / Address -->
+        <div class="footer-col">
+          <h4>Visit Us</h4>
+          <address class="footer-address">
+            Side Quest Complete<br>
+            New Bedford, MA 02740<br>
+            <br>
+            <a href="mailto:hello@sidequestcomplete.com" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">
+              hello@sidequestcomplete.com
+            </a><br>
+            <br>
+            Mon–Sat: 10am – 7pm<br>
+            Sun: 11am – 5pm
+          </address>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">
+          &copy; 2025 Side Quest Complete. All rights reserved.
+        </p>
+        <p class="footer-credit">
+          Built with <span>♥</span> for retro culture
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Scripts ───────────────────────────────────────────────────────────── -->
+  <script src="products.js"></script>
+  <script src="main.js"></script>
+
+</body>
+</html>
