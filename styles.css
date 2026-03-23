@@ -524,11 +524,15 @@ ul { list-style: none; }
 
 .product-image {
   position: relative;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
+  height: 220px;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .product-emoji {

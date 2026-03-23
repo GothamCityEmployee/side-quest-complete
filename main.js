@@ -23,7 +23,7 @@ function createProductCard(product) {
   return `
     <div class="product-card" data-id="${product.id}" role="button" tabindex="0" aria-label="View ${product.name}">
       <div class="product-image" style="background: ${product.bg}">
-        <span class="product-emoji" role="img" aria-label="${product.name}">${product.emoji}</span>
+        <img src="${product.image}" alt="${product.name}" onerror="this.style.display='none'">
         ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
       </div>
       <div class="product-info">
