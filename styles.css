@@ -16,6 +16,12 @@
   --neon-glow:    0 0 8px #39ff14, 0 0 20px rgba(57, 255, 20, 0.4);
   --neon-glow-lg: 0 0 12px #39ff14, 0 0 30px rgba(57, 255, 20, 0.5), 0 0 60px rgba(57, 255, 20, 0.2);
 
+  --color-purple:   #b03af5;
+  --purple-dim:     #8e2ec4;
+  --purple-glow:    0 0 10px #b03af5, 0 0 20px #b03af5;
+  --purple-glow-lg: 0 0 12px #b03af5, 0 0 30px rgba(176, 58, 245, 0.5), 0 0 60px rgba(176, 58, 245, 0.2);
+  --border-hover-purple: rgba(176, 58, 245, 0.4);
+
   --white:        #ffffff;
   --gray-100:     #f5f5f5;
   --gray-400:     #aaaaaa;
@@ -630,7 +636,7 @@ ul { list-style: none; }
   line-height: 1.8;
 }
 
-.condition-mint      { background: #16a34a; color: #fff; }
+.condition-mint      { background: var(--color-purple); color: #fff; box-shadow: 0 0 6px rgba(176, 58, 245, 0.5); }
 .condition-excellent { background: #2563eb; color: #fff; }
 .condition-good      { background: #ca8a04; color: #fff; }
 .condition-fair      { background: #6b7280; color: #fff; }
@@ -651,6 +657,16 @@ ul { list-style: none; }
 
 /* ─── Categories ───────────────────────────────────────────────────────────── */
 #categories { background: var(--surface); }
+
+#categories .section-title {
+  color: var(--color-purple);
+  text-shadow: var(--purple-glow);
+}
+
+#categories .section-header {
+  border-left: 3px solid var(--color-purple);
+  padding-left: 16px;
+}
 
 .categories-grid {
   display: grid;
@@ -680,6 +696,15 @@ ul { list-style: none; }
   border-color: var(--border-hover);
   box-shadow: 0 6px 24px rgba(57, 255, 20, 0.12);
   background: var(--bg-card-hover);
+}
+
+.category-tile:nth-child(even):hover {
+  border-color: var(--border-hover-purple);
+  box-shadow: 0 6px 24px rgba(176, 58, 245, 0.14);
+}
+
+.category-tile:nth-child(even) .category-name {
+  color: var(--color-purple);
 }
 
 .category-icon {
@@ -762,6 +787,16 @@ ul { list-style: none; }
 /* ─── Blog ─────────────────────────────────────────────────────────────────── */
 #blog { background: var(--surface); }
 
+#blog .section-title {
+  color: var(--color-purple);
+  text-shadow: var(--purple-glow);
+}
+
+#blog .section-header {
+  border-left: 3px solid var(--color-purple);
+  padding-left: 16px;
+}
+
 .blog-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -784,6 +819,21 @@ ul { list-style: none; }
   transform: translateY(-4px);
   border-color: rgba(57, 255, 20, 0.25);
   box-shadow: 0 8px 32px rgba(57, 255, 20, 0.1);
+}
+
+.blog-card:nth-child(even):hover {
+  border-color: rgba(176, 58, 245, 0.3);
+  box-shadow: 0 8px 32px rgba(176, 58, 245, 0.1);
+}
+
+.blog-card:nth-child(even) .blog-tag {
+  color: var(--color-purple);
+  background: rgba(176, 58, 245, 0.1);
+  border-color: rgba(176, 58, 245, 0.2);
+}
+
+.blog-card:nth-child(even) .blog-read-more {
+  color: var(--color-purple);
 }
 
 .blog-thumb {
@@ -857,8 +907,9 @@ ul { list-style: none; }
 /* ─── Footer ───────────────────────────────────────────────────────────────── */
 footer {
   background: #0a0a0a;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(176, 58, 245, 0.2);
   padding: 60px 0 24px;
+  box-shadow: 0 -1px 20px rgba(176, 58, 245, 0.06);
 }
 
 .footer-grid {
@@ -906,6 +957,12 @@ footer {
   background: rgba(57, 255, 20, 0.06);
 }
 
+.social-link:nth-child(even):hover {
+  border-color: var(--color-purple);
+  box-shadow: var(--purple-glow);
+  background: rgba(176, 58, 245, 0.06);
+}
+
 .footer-col h4 {
   font-family: var(--font-pixel);
   font-size: 0.5rem;
@@ -913,6 +970,11 @@ footer {
   letter-spacing: 0.1em;
   margin-bottom: 16px;
   line-height: 2;
+}
+
+.footer-col:nth-child(even) h4 {
+  color: var(--color-purple);
+  text-shadow: 0 0 8px rgba(176, 58, 245, 0.5);
 }
 
 .footer-col ul li {
@@ -1003,15 +1065,16 @@ footer {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(176, 58, 245, 0.3);
+  background: linear-gradient(135deg, rgba(176, 58, 245, 0.05) 0%, transparent 100%);
   flex-shrink: 0;
 }
 
 .cart-header-title {
   font-family: var(--font-pixel);
   font-size: 0.7rem;
-  color: var(--neon);
-  text-shadow: var(--neon-glow);
+  color: var(--color-purple);
+  text-shadow: var(--purple-glow);
   line-height: 2;
 }
 
@@ -1394,9 +1457,13 @@ footer {
     var(--neon) 0px,
     var(--neon) 8px,
     transparent 8px,
-    transparent 16px
+    transparent 16px,
+    var(--color-purple) 16px,
+    var(--color-purple) 24px,
+    transparent 24px,
+    transparent 32px
   );
-  opacity: 0.25;
+  opacity: 0.35;
   margin: 0;
 }
 
