@@ -19,6 +19,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .loyalty-banner {
+      background: linear-gradient(90deg, #0d1f0d 0%, #1a0a2e 50%, #0d1f0d 100%);
+      border-top: 1px solid rgba(57,255,20,0.2);
+      border-bottom: 1px solid rgba(176,58,245,0.2);
+      text-align: center;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: #aaa;
+      letter-spacing: 0.02em;
+    }
+    .loyalty-banner a {
+      color: #b03af5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .loyalty-banner a:hover { text-decoration: underline; }
+    #nav-user-link { white-space: nowrap; }
+  </style>
 </head>
 <body>
 
@@ -91,11 +110,13 @@
         <li><a href="#about">About</a></li>
         <li><a href="#blog">Blog</a></li>
         <li><a href="#contact">Contact</a></li>
+        <li><a href="account.html" aria-label="Wishlist">❤️</a></li>
+        <li id="nav-user-li"><a href="login.html" id="nav-user-link">👤 Login</a></li>
       </ul>
 
       <div class="nav-right">
         <!-- Cart -->
-        <button id="cart-btn" class="cart-btn" aria-label="Open shopping cart">
+        <button id="cart-btn" class="cart-btn" aria-label="Go to checkout" onclick="window.location.href='checkout.html'">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
@@ -146,6 +167,12 @@
       <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
   </section>
+
+  <!-- ─── Loyalty Banner ───────────────────────────────────────────────────── -->
+  <div class="loyalty-banner" role="note">
+    🎮 Earn 1 point per $1 spent &nbsp;•&nbsp; Bronze → Silver → Gold → Platinum &nbsp;•&nbsp;
+    <a href="login.html">Login to start earning →</a>
+  </div>
 
   <div class="pixel-divider" role="presentation"></div>
 
@@ -413,6 +440,17 @@
   <!-- ─── Scripts ───────────────────────────────────────────────────────────── -->
   <script src="products.js"></script>
   <script src="main.js"></script>
+  <script>
+    (function() {
+      try {
+        var user = JSON.parse(localStorage.getItem('sqc_user') || 'null');
+        if (user && user.firstName) {
+          var link = document.getElementById('nav-user-link');
+          if (link) { link.textContent = '👤 ' + user.firstName; link.href = 'account.html'; }
+        }
+      } catch(e) {}
+    })();
+  </script>
 
 </body>
 </html>

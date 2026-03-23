@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Login or create your Side Quest Complete account." />
+  <meta name="theme-color" content="#111111" />
+  <title>Login — Side Quest Complete</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ── Page Layout ──────────────────────────────────────────────────────── */
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .auth-page {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 16px 60px;
+      background: var(--bg);
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 0 40px rgba(57, 255, 20, 0.06);
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      justify-content: center;
+    }
+
+    .auth-logo img { width: 44px; height: 44px; }
+
+    .auth-logo-text {
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      color: var(--neon);
+      line-height: 1.5;
+      text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+    }
+
+    /* ── Tabs ─────────────────────────────────────────────────────────────── */
+    .auth-tabs {
+      display: flex;
+      border-bottom: 2px solid #2a2a2a;
+      margin-bottom: 32px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 12px;
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      color: #666;
+      cursor: pointer;
+      transition: color 0.2s;
+      letter-spacing: 0.05em;
+      position: relative;
+    }
+
+    .auth-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--neon);
+      transform: scaleX(0);
+      transition: transform 0.2s;
+    }
+
+    .auth-tab.active {
+      color: var(--neon);
+    }
+
+    .auth-tab.active::after {
+      transform: scaleX(1);
+    }
+
+    .auth-tab:hover:not(.active) {
+      color: #aaa;
+    }
+
+    /* ── Forms ────────────────────────────────────────────────────────────── */
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    .form-title {
+      font-family: var(--font-pixel);
+      font-size: 0.75rem;
+      color: white;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #aaa;
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .form-group input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1.5px solid #333;
+      border-radius: 6px;
+      color: white;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      padding: 12px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--neon);
+      box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.1);
+    }
+
+    .form-group input.error {
+      border-color: #ff4444;
+      box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+    }
+
+    .form-group input.success {
+      border-color: var(--neon);
+    }
+
+    .field-error {
+      display: none;
+      font-size: 0.75rem;
+      color: #ff4444;
+      margin-top: 5px;
+    }
+
+    .field-error.visible { display: block; }
+
+    /* ── Checkbox Row ─────────────────────────────────────────────────────── */
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .form-checkbox input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--neon);
+      cursor: pointer;
+    }
+
+    .form-checkbox label {
+      font-size: 0.85rem;
+      color: #aaa;
+      cursor: pointer;
+    }
+
+    /* ── Alert ────────────────────────────────────────────────────────────── */
+    .form-alert {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+
+    .form-alert.error {
+      background: rgba(255, 68, 68, 0.1);
+      border-color: #ff4444;
+      color: #ff6666;
+      display: block;
+    }
+
+    .form-alert.success {
+      background: rgba(57, 255, 20, 0.1);
+      border-color: var(--neon);
+      color: var(--neon);
+      display: block;
+    }
+
+    /* ── Submit Button ────────────────────────────────────────────────────── */
+    .btn-auth {
+      width: 100%;
+      background: var(--neon);
+      color: #111;
+      border: none;
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-pixel);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: opacity 0.2s, box-shadow 0.2s, transform 0.1s;
+      box-shadow: 0 0 16px rgba(57, 255, 20, 0.3);
+    }
+
+    .btn-auth:hover {
+      opacity: 0.92;
+      box-shadow: 0 0 24px rgba(57, 255, 20, 0.5);
+    }
+
+    .btn-auth:active { transform: scale(0.99); }
+
+    .btn-auth:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── Bottom Link ──────────────────────────────────────────────────────── */
+    .auth-footer-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .auth-footer-link a {
+      color: var(--color-purple);
+      text-decoration: none;
+    }
+
+    .auth-footer-link a:hover { text-decoration: underline; }
+
+    /* ── Password strength ────────────────────────────────────────────────── */
+    .pw-strength {
+      margin-top: 6px;
+      display: none;
+    }
+
+    .pw-strength.visible { display: block; }
+
+    .pw-strength-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: #333;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .pw-strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+      width: 0%;
+    }
+
+    .pw-strength-label {
+      font-size: 0.7rem;
+      color: #666;
+    }
+
+    @media (max-width: 480px) {
+      .auth-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Minimal Header ─────────────────────────────────────────────────────── -->
+  <header id="site-header" role="banner">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="index.html" class="nav-logo" aria-label="Side Quest Complete — Home">
+        <img src="../logos/IMG_0216_Original.PNG" alt="Side Quest Complete logo" width="40" height="40" />
+        <span class="nav-logo-text">Side Quest<br>Complete</span>
+      </a>
+      <div class="nav-right">
+        <a href="index.html" style="color: #aaa; font-size: 0.8rem; text-decoration: none;">← Back to Store</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ─── Auth Page ──────────────────────────────────────────────────────────── -->
+  <main class="auth-page">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <img src="../logos/IMG_0216_Original.PNG" alt="SQC" />
+        <span class="auth-logo-text">Side Quest<br>Complete</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" role="tab" aria-selected="true" aria-controls="form-login" id="tab-login" data-tab="login">
+          Login
+        </button>
+        <button class="auth-tab" role="tab" aria-selected="false" aria-controls="form-register" id="tab-register" data-tab="register">
+          Create Account
+        </button>
+      </div>
+
+      <!-- ── Login Form ──────────────────────────────────────────────────────── -->
+      <form id="form-login" class="auth-form active" role="tabpanel" aria-labelledby="tab-login" novalidate>
+        <p class="form-title">Welcome back, player.</p>
+
+        <div id="login-alert" class="form-alert" role="alert"></div>
+
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" name="email" autocomplete="email" placeholder="you@example.com" required />
+          <span class="field-error" id="login-email-err"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="••••••••" required />
+          <span class="field-error" id="login-password-err"></span>
+        </div>
+
+        <div class="form-checkbox">
+          <input type="checkbox" id="login-remember" name="remember" />
+          <label for="login-remember">Remember me</label>
+        </div>
+
+        <button type="submit" class="btn-auth" id="login-submit">Login</button>
+
+        <p class="auth-footer-link">
+          No account? <a href="#" data-switch="register">Create one →</a>
+        </p>
+      </form>
+
+      <!-- ── Register Form ───────────────────────────────────────────────────── -->
+      <form id="form-register" class="auth-form" role="tabpanel" aria-labelledby="tab-register" novalidate>
+        <p class="form-title">Start your quest.</p>
+
+        <div id="register-alert" class="form-alert" role="alert"></div>
+
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" name="name" autocomplete="name" placeholder="Your Name" required />
+          <span class="field-error" id="reg-name-err"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="you@example.com" required />
+          <span class="field-error" id="reg-email-err"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="Choose a password" required minlength="6" />
+          <span class="field-error" id="reg-password-err"></span>
+          <div class="pw-strength" id="pw-strength">
+            <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+            <span class="pw-strength-label" id="pw-label">Too short</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-confirm">Confirm Password</label>
+          <input type="password" id="reg-confirm" name="confirm" autocomplete="new-password" placeholder="Repeat your password" required />
+          <span class="field-error" id="reg-confirm-err"></span>
+        </div>
+
+        <button type="submit" class="btn-auth" id="register-submit">Create Account</button>
+
+        <p class="auth-footer-link">
+          Already have an account? <a href="#" data-switch="login">Login →</a>
+        </p>
+      </form>
+
+    </div>
+  </main>
+
+  <script src="auth.js"></script>
+  <script>
+    (function () {
+      // ── Redirect if already logged in ──────────────────────────────────────
+      if (window.SQCAuth && SQCAuth.isLoggedIn()) {
+        const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
+        location.replace(redirect);
+      }
+
+      // ── Tab switching ──────────────────────────────────────────────────────
+      function switchTab(name) {
+        document.querySelectorAll('.auth-tab').forEach(t => {
+          const active = t.dataset.tab === name;
+          t.classList.toggle('active', active);
+          t.setAttribute('aria-selected', String(active));
+        });
+        document.querySelectorAll('.auth-form').forEach(f => {
+          f.classList.toggle('active', f.id === 'form-' + name);
+        });
+      }
+
+      document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      });
+
+      document.querySelectorAll('[data-switch]').forEach(link => {
+        link.addEventListener('click', e => { e.preventDefault(); switchTab(link.dataset.switch); });
+      });
+
+      // ── Field validation helpers ───────────────────────────────────────────
+      function setFieldError(inputEl, errEl, msg) {
+        inputEl.classList.toggle('error', !!msg);
+        inputEl.classList.toggle('success', !msg && inputEl.value.length > 0);
+        errEl.textContent = msg || '';
+        errEl.classList.toggle('visible', !!msg);
+      }
+
+      function showAlert(alertEl, msg, type) {
+        alertEl.textContent = msg;
+        alertEl.className = 'form-alert ' + type;
+      }
+
+      function hideAlert(alertEl) {
+        alertEl.className = 'form-alert';
+      }
+
+      // ── Password strength ──────────────────────────────────────────────────
+      const pwInput = document.getElementById('reg-password');
+      const pwStrength = document.getElementById('pw-strength');
+      const pwFill = document.getElementById('pw-fill');
+      const pwLabel = document.getElementById('pw-label');
+
+      pwInput.addEventListener('input', () => {
+        const val = pwInput.value;
+        if (!val.length) { pwStrength.classList.remove('visible'); return; }
+        pwStrength.classList.add('visible');
+
+        let score = 0;
+        if (val.length >= 6) score++;
+        if (val.length >= 10) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const pct = [0, 20, 40, 65, 82, 100][score];
+        const colors = ['#ff4444', '#ff7700', '#ffbb00', '#aaff00', '#39ff14', '#39ff14'];
+        const labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+        pwFill.style.width = pct + '%';
+        pwFill.style.background = colors[score];
+        pwLabel.textContent = labels[score];
+        pwLabel.style.color = colors[score];
+      });
+
+      // ── Login submit ───────────────────────────────────────────────────────
+      document.getElementById('form-login').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const email = document.getElementById('login-email');
+        const password = document.getElementById('login-password');
+        const remember = document.getElementById('login-remember').checked;
+        const alert = document.getElementById('login-alert');
+
+        hideAlert(alert);
+        let valid = true;
+
+        if (!email.value.trim()) {
+          setFieldError(email, document.getElementById('login-email-err'), 'Email is required.');
+          valid = false;
+        } else {
+          setFieldError(email, document.getElementById('login-email-err'), '');
+        }
+
+        if (!password.value) {
+          setFieldError(password, document.getElementById('login-password-err'), 'Password is required.');
+          valid = false;
+        } else {
+          setFieldError(password, document.getElementById('login-password-err'), '');
+        }
+
+        if (!valid) return;
+
+        const btn = document.getElementById('login-submit');
+        btn.disabled = true;
+        btn.textContent = 'Logging in...';
+
+        const result = SQCAuth.login(email.value.trim(), password.value, remember);
+
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'Login';
+
+          if (!result.success) {
+            showAlert(alert, result.error, 'error');
+            if (result.error.includes('password')) {
+              setFieldError(password, document.getElementById('login-password-err'), result.error);
+            }
+            return;
+          }
+
+          showAlert(alert, 'Welcome back, ' + result.user.name.split(' ')[0] + '! Redirecting...', 'success');
+          const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
+          setTimeout(() => location.replace(redirect), 900);
+        }, 300);
+      });
+
+      // ── Register submit ────────────────────────────────────────────────────
+      document.getElementById('form-register').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const name = document.getElementById('reg-name');
+        const email = document.getElementById('reg-email');
+        const password = document.getElementById('reg-password');
+        const confirm = document.getElementById('reg-confirm');
+        const alert = document.getElementById('register-alert');
+
+        hideAlert(alert);
+        let valid = true;
+
+        if (!name.value.trim()) {
+          setFieldError(name, document.getElementById('reg-name-err'), 'Name is required.');
+          valid = false;
+        } else {
+          setFieldError(name, document.getElementById('reg-name-err'), '');
+        }
+
+        const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.value.trim() || !emailRx.test(email.value)) {
+          setFieldError(email, document.getElementById('reg-email-err'), 'Enter a valid email address.');
+          valid = false;
+        } else {
+          setFieldError(email, document.getElementById('reg-email-err'), '');
+        }
+
+        if (password.value.length < 6) {
+          setFieldError(password, document.getElementById('reg-password-err'), 'Password must be at least 6 characters.');
+          valid = false;
+        } else {
+          setFieldError(password, document.getElementById('reg-password-err'), '');
+        }
+
+        if (confirm.value !== password.value) {
+          setFieldError(confirm, document.getElementById('reg-confirm-err'), 'Passwords do not match.');
+          valid = false;
+        } else {
+          setFieldError(confirm, document.getElementById('reg-confirm-err'), '');
+        }
+
+        if (!valid) return;
+
+        const btn = document.getElementById('register-submit');
+        btn.disabled = true;
+        btn.textContent = 'Creating account...';
+
+        const result = SQCAuth.register(name.value.trim(), email.value.trim(), password.value);
+
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+
+          if (!result.success) {
+            showAlert(alert, result.error, 'error');
+            if (result.error.includes('email')) {
+              setFieldError(email, document.getElementById('reg-email-err'), result.error);
+            }
+            return;
+          }
+
+          showAlert(alert, 'Account created! Welcome to Side Quest Complete!', 'success');
+          setTimeout(() => location.replace('account.html'), 1000);
+        }, 300);
+      });
+
+      // Check hash for default tab
+      if (location.hash === '#register') switchTab('register');
+    })();
+  </script>
+</body>
+</html>

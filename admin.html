@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Side Quest Complete</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #39ff14;
+      --purple: #b03af5;
+      --bg: #111;
+      --card: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #fff;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    /* LOGIN */
+    #login-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .login-box {
+      background: var(--card); border: 1px solid var(--green); border-radius: 12px;
+      padding: 40px; width: 100%; max-width: 400px; text-align: center;
+    }
+    .login-box h1 { font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--green); margin-bottom: 8px; }
+    .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%; padding: 12px 16px; background: #222; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 16px;
+    }
+    .login-box input:focus { outline: none; border-color: var(--green); }
+    .btn-green {
+      background: var(--green); color: #000; border: none; padding: 12px 24px;
+      border-radius: 8px; font-family: 'Inter', sans-serif; font-weight: 700;
+      font-size: 14px; cursor: pointer; width: 100%; transition: opacity .2s;
+    }
+    .btn-green:hover { opacity: .85; }
+    .login-error { color: #ff4444; font-size: 13px; margin-top: 10px; display: none; }
+
+    /* LAYOUT */
+    #app { display: none; }
+    header {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--green); }
+    header span { color: var(--muted); font-size: 13px; }
+    .logout-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+      transition: border-color .2s;
+    }
+    .logout-btn:hover { border-color: var(--purple); color: var(--text); }
+    main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px; text-align: center;
+    }
+    .stat-card .val { font-family: 'Press Start 2P', monospace; font-size: 18px; color: var(--green); margin-bottom: 6px; }
+    .stat-card .lbl { font-size: 12px; color: var(--muted); }
+
+    /* TOOLBAR */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .toolbar h2 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--text); }
+    .btn-purple {
+      background: var(--purple); color: #fff; border: none; padding: 10px 20px;
+      border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity .2s;
+    }
+    .btn-purple:hover { opacity: .85; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1f1f1f; padding: 12px 16px; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    td { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    tr:hover td { background: #1c1c1c; }
+    .thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; background: #222; }
+    .cat-badge {
+      display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px;
+      font-weight: 600; background: #222; color: var(--muted);
+    }
+    .margin-good { color: #39ff14; }
+    .margin-ok   { color: #ffd700; }
+    .margin-bad  { color: #ff4444; }
+    .btn-sm {
+      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity .2s;
+    }
+    .btn-edit { background: var(--purple); color: #fff; margin-right: 6px; }
+    .btn-del  { background: #ff4444; color: #fff; }
+    .btn-sm:hover { opacity: .8; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      display: none; align-items: flex-start; justify-content: center;
+      z-index: 1000; padding: 40px 16px; overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border: 1px solid var(--purple); border-radius: 14px;
+      padding: 32px; width: 100%; max-width: 600px;
+    }
+    .modal h3 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--purple); margin-bottom: 24px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 14px; background: #222; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--purple);
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .profit-preview {
+      background: #1f1f1f; border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .profit-preview span { font-size: 13px; color: var(--muted); }
+    .profit-preview strong { color: var(--green); }
+    .toggle-row { display: flex; gap: 24px; margin-bottom: 16px; }
+    .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .btn-cancel {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer;
+    }
+    .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+    .empty { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-overlay">
+  <div class="login-box">
+    <h1>⚙️ Admin Panel</h1>
+    <p>Side Quest Complete</p>
+    <input type="password" id="pw-input" placeholder="Enter admin password" />
+    <button class="btn-green" onclick="doLogin()">Enter</button>
+    <div class="login-error" id="login-err">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <h1>⚙️ SQC Admin</h1>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <a href="index.html" style="color:var(--muted);font-size:13px;text-decoration:none;">← View Store</a>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- STATS -->
+    <div class="stats" id="stats-bar"></div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <h2>📦 Products</h2>
+      <button class="btn-purple" onclick="openModal()">+ Add New Product</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Photo</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Condition</th>
+            <th>Cost</th>
+            <th>Sell Price</th>
+            <th>Profit $</th>
+            <th>Margin %</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="product-table"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">+ Add Product</h3>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Product Name</label>
+        <input type="text" id="f-name" placeholder="e.g. Snake Eyes Figure (1982)" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="f-cat" onchange="toggleConsole()">
+          <option value="G.I. Joe">G.I. Joe</option>
+          <option value="Pokemon">Pokemon</option>
+          <option value="TMNT">TMNT</option>
+          <option value="Thundercats">Thundercats</option>
+          <option value="Video Games">Video Games</option>
+          <option value="Collectables">Collectables</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Condition</label>
+        <select id="f-cond">
+          <option>Mint</option>
+          <option>Excellent</option>
+          <option>Good</option>
+          <option>Fair</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="console-row" style="display:none">
+      <label>Console</label>
+      <input type="text" id="f-console" placeholder="e.g. NES, SNES, N64, Genesis, PS1..." />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cost Price (what you paid)</label>
+        <input type="number" id="f-cost" placeholder="0.00" step="0.01" min="0" oninput="calcProfit()" />
+      </div>
+      <div class="form-group">
+        <label>Sell Price (asking price)</label>
+        <input type="number" id="f-price" placeholder="0.00" step="0.01" min="0" oninput="calcProfit()" />
+      </div>
+    </div>
+    <div class="profit-preview" id="profit-preview">
+      <span>Profit: <strong id="prev-profit">—</strong></span>
+      <span>Margin: <strong id="prev-margin">—</strong></span>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="f-desc" placeholder="Describe the item, condition details, what's included..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Image Path (e.g. images/products/product-25.jpg)</label>
+      <input type="text" id="f-img" placeholder="images/products/product-25.jpg" />
+    </div>
+    <div class="toggle-row">
+      <label class="toggle-label">
+        <input type="checkbox" id="f-stock" checked /> In Stock
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="f-featured" /> Featured
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-green" onclick="saveProduct()" style="flex:1">Save Product</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="products.js"></script>
+<script>
+  const ADMIN_PW = 'sidequestadmin';
+  const LS_KEY = 'sqc_products';
+  let editingId = null;
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  function doLogin() {
+    const pw = document.getElementById('pw-input').value;
+    if (pw === ADMIN_PW) {
+      sessionStorage.setItem('sqc_admin', '1');
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      renderAll();
+    } else {
+      document.getElementById('login-err').style.display = 'block';
+    }
+  }
+  document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  function doLogout() {
+    sessionStorage.removeItem('sqc_admin');
+    location.reload();
+  }
+
+  if (sessionStorage.getItem('sqc_admin')) {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+
+  // ── Data ──────────────────────────────────────────────────────────────────
+  function getAllProducts() {
+    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    // Merge: local overrides base by id
+    const map = {};
+    (products || []).forEach(p => map[p.id] = p);
+    local.forEach(p => map[p.id] = p);
+    return Object.values(map);
+  }
+
+  function saveToLocal(p) {
+    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    const idx = local.findIndex(x => x.id === p.id);
+    if (idx >= 0) local[idx] = p; else local.push(p);
+    localStorage.setItem(LS_KEY, JSON.stringify(local));
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    const existing = local.find(x => x.id === id);
+    if (existing) {
+      const updated = local.filter(x => x.id !== id);
+      localStorage.setItem(LS_KEY, JSON.stringify(updated));
+    } else {
+      // Mark base product as deleted
+      const all = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+      const base = (products || []).find(p => p.id === id);
+      if (base) { all.push({...base, deleted: true}); localStorage.setItem(LS_KEY, JSON.stringify(all)); }
+    }
+    renderAll();
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderAll() {
+    const all = getAllProducts().filter(p => !p.deleted);
+    renderStats(all);
+    renderTable(all);
+  }
+
+  function renderStats(all) {
+    const totalValue = all.reduce((s, p) => s + (p.price || 0), 0);
+    const margins = all.filter(p => p.cost > 0).map(p => ((p.price - p.cost) / p.price * 100));
+    const avgMargin = margins.length ? (margins.reduce((a,b) => a+b, 0) / margins.length) : 0;
+    const featured = all.filter(p => p.featured).length;
+    document.getElementById('stats-bar').innerHTML = `
+      <div class="stat-card"><div class="val">${all.length}</div><div class="lbl">Total Products</div></div>
+      <div class="stat-card"><div class="val">$${totalValue.toFixed(0)}</div><div class="lbl">Inventory Value</div></div>
+      <div class="stat-card"><div class="val">${avgMargin.toFixed(0)}%</div><div class="lbl">Avg Margin</div></div>
+      <div class="stat-card"><div class="val">${featured}</div><div class="lbl">Featured</div></div>
+    `;
+  }
+
+  function renderTable(all) {
+    const tbody = document.getElementById('product-table');
+    if (!all.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty">No products yet. Add your first one!</td></tr>'; return; }
+    tbody.innerHTML = all.map(p => {
+      const cost = p.cost || 0;
+      const profit = p.price - cost;
+      const margin = p.price > 0 ? (profit / p.price * 100) : 0;
+      const mc = margin >= 40 ? 'margin-good' : margin >= 20 ? 'margin-ok' : 'margin-bad';
+      const costStr = cost > 0 ? `$${cost.toFixed(2)}` : '<span style="color:#555">—</span>';
+      return `<tr>
+        <td><img class="thumb" src="${p.image || ''}" onerror="this.style.opacity='.2'" /></td>
+        <td><strong>${p.name}</strong>${p.console ? `<br><span style="font-size:11px;color:var(--purple)">${p.console}</span>` : ''}</td>
+        <td><span class="cat-badge">${p.category}</span></td>
+        <td><span style="font-size:12px;color:var(--muted)">${p.condition || '—'}</span></td>
+        <td>${costStr}</td>
+        <td style="color:var(--green)">$${(p.price||0).toFixed(2)}</td>
+        <td>${cost > 0 ? `<span class="${mc}">$${profit.toFixed(2)}</span>` : '—'}</td>
+        <td>${cost > 0 ? `<span class="${mc}">${margin.toFixed(0)}%</span>` : '—'}</td>
+        <td>${p.inStock ? '✅' : '❌'}</td>
+        <td>
+          <button class="btn-sm btn-edit" onclick="editProduct(${p.id})">Edit</button>
+          <button class="btn-sm btn-del" onclick="deleteProduct(${p.id})">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  function openModal(p = null) {
+    editingId = p ? p.id : null;
+    document.getElementById('modal-title').textContent = p ? '✏️ Edit Product' : '+ Add Product';
+    document.getElementById('f-name').value    = p?.name || '';
+    document.getElementById('f-cat').value     = p?.category || 'G.I. Joe';
+    document.getElementById('f-cond').value    = p?.condition || 'Excellent';
+    document.getElementById('f-console').value = p?.console || '';
+    document.getElementById('f-cost').value    = p?.cost || '';
+    document.getElementById('f-price').value   = p?.price || '';
+    document.getElementById('f-desc').value    = p?.description || '';
+    document.getElementById('f-img').value     = p?.image || '';
+    document.getElementById('f-stock').checked   = p ? !!p.inStock : true;
+    document.getElementById('f-featured').checked = p ? !!p.featured : false;
+    toggleConsole();
+    calcProfit();
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    editingId = null;
+  }
+
+  function editProduct(id) {
+    const p = getAllProducts().find(x => x.id === id);
+    if (p) openModal(p);
+  }
+
+  function toggleConsole() {
+    const isGames = document.getElementById('f-cat').value === 'Video Games';
+    document.getElementById('console-row').style.display = isGames ? 'block' : 'none';
+  }
+
+  function calcProfit() {
+    const cost  = parseFloat(document.getElementById('f-cost').value)  || 0;
+    const price = parseFloat(document.getElementById('f-price').value) || 0;
+    const profit = price - cost;
+    const margin = price > 0 ? (profit / price * 100) : 0;
+    document.getElementById('prev-profit').textContent = cost > 0 ? `$${profit.toFixed(2)}` : '—';
+    document.getElementById('prev-margin').textContent = cost > 0 ? `${margin.toFixed(0)}%` : '—';
+  }
+
+  function saveProduct() {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { alert('Product name is required.'); return; }
+    const price = parseFloat(document.getElementById('f-price').value) || 0;
+    const cost  = parseFloat(document.getElementById('f-cost').value)  || 0;
+    const all = getAllProducts();
+    const newId = editingId || (Math.max(0, ...all.map(p => p.id)) + 1);
+    const p = {
+      id: newId,
+      name,
+      category:    document.getElementById('f-cat').value,
+      condition:   document.getElementById('f-cond').value,
+      console:     document.getElementById('f-cat').value === 'Video Games' ? document.getElementById('f-console').value : undefined,
+      cost,
+      price,
+      description: document.getElementById('f-desc').value.trim(),
+      image:       document.getElementById('f-img').value.trim() || 'images/products/placeholder.jpg',
+      inStock:     document.getElementById('f-stock').checked,
+      featured:    document.getElementById('f-featured').checked,
+      categorySlug: document.getElementById('f-cat').value.toLowerCase().replace(/[^a-z0-9]/g,'-'),
+      emoji: '🎮',
+      bg: 'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
+    };
+    saveToLocal(p);
+    closeModal();
+    renderAll();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  if (sessionStorage.getItem('sqc_admin')) renderAll();
+</script>
+</body>
+</html>
