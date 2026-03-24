@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Square Web Payments SDK (sandbox) -->
+  <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -464,33 +466,9 @@
     <div class="step-panel" id="panel-3">
       <h2 class="panel-title">Payment</h2>
 
-      <div class="pay-wallets">
-        <button class="btn-apple-pay" onclick="alert('Apple Pay coming soon!')">🍎 Apple Pay</button>
-        <button class="btn-google-pay" onclick="alert('Google Pay coming soon!')">
-          <span style="color:#4285f4">G</span><span style="color:#ea4335">o</span><span style="color:#fbbc05">o</span><span style="color:#4285f4">g</span><span style="color:#34a853">l</span><span style="color:#ea4335">e</span> Pay
-        </button>
-      </div>
-
-      <div class="pay-divider">— or pay with card —</div>
-
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Card Number</label>
-          <input type="text" id="p-card" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" />
-        </div>
-        <div class="form-group">
-          <label>Expiry (MM/YY)</label>
-          <input type="text" id="p-expiry" placeholder="MM/YY" maxlength="5" />
-        </div>
-        <div class="form-group">
-          <label>CVV</label>
-          <input type="text" id="p-cvv" placeholder="123" maxlength="4" />
-        </div>
-        <div class="form-group full">
-          <label>Name on Card</label>
-          <input type="text" id="p-name" placeholder="Mario Bros" />
-        </div>
-      </div>
+      <!-- Square Web Payments SDK card form -->
+      <div id="square-card-container" style="margin-bottom:16px;"></div>
+      <div id="square-payment-error" style="color:#ff4444;font-size:13px;margin-bottom:12px;display:none;"></div>
 
       <div class="square-note">💳 <span>Secured by Square</span></div>
 
@@ -664,86 +642,121 @@
       }
     });
 
-    // ── Card number formatting ──
-    document.getElementById('p-card').addEventListener('input', function() {
-      let v = this.value.replace(/\D/g,'').slice(0,16);
-      this.value = v.replace(/(.{4})/g,'$1 ').trim();
-    });
-    document.getElementById('p-expiry').addEventListener('input', function() {
-      let v = this.value.replace(/\D/g,'').slice(0,4);
-      if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2);
-      this.value = v;
-    });
+    // ── Square Web Payments SDK init ──
+    const SQUARE_APP_ID  = 'sandbox-sq0idb-PQheMLyAisYrDZ2dentCyA';
+    const SQUARE_LOCATION_ID = 'main'; // update with real location ID from Square dashboard
+    let squareCard = null;
+
+    async function initSquare() {
+      if (!window.Square) { console.error('Square SDK not loaded'); return; }
+      const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+      squareCard = await payments.card({
+        style: {
+          input: { color: '#e8e8e8', backgroundColor: '#222', fontSize: '14px' },
+          '.input-container': { borderColor: '#333', borderRadius: '8px' },
+          '.input-container.is-focus': { borderColor: '#b03af5' },
+          '.input-container.is-error': { borderColor: '#ff4444' },
+        }
+      });
+      await squareCard.attach('#square-card-container');
+    }
+
+    // Init Square when step 3 becomes active
+    const origGoToStep = goToStep;
+    goToStep = function(n) {
+      origGoToStep(n);
+      if (n === 3 && !squareCard) initSquare();
+    };
 
     // ── Place order ──
     document.getElementById('btn-place-order').addEventListener('click', async function() {
       const btn = document.getElementById('btn-place-order');
+      const errEl = document.getElementById('square-payment-error');
       btn.disabled = true;
-      btn.textContent = 'Placing Order...';
+      btn.textContent = 'Processing...';
+      errEl.style.display = 'none';
 
-      const sub = getSubtotal();
-      const ship = getShipping(sub);
+      const sub   = getSubtotal();
+      const ship  = getShipping(sub);
       const total = sub + ship;
 
-      // Collect shipping address
       const shippingAddress = {
-        firstName: document.getElementById('s-first')?.value || '',
-        lastName:  document.getElementById('s-last')?.value  || '',
+        firstName: document.getElementById('s-first')?.value  || '',
+        lastName:  document.getElementById('s-last')?.value   || '',
         address:   document.getElementById('s-address')?.value || '',
-        city:      document.getElementById('s-city')?.value  || '',
-        state:     document.getElementById('s-state')?.value || '',
-        zip:       document.getElementById('s-zip')?.value   || '',
+        city:      document.getElementById('s-city')?.value   || '',
+        state:     document.getElementById('s-state')?.value  || '',
+        zip:       document.getElementById('s-zip')?.value    || '',
       };
       const email = document.getElementById('s-email')?.value || '';
+      const orderId = 'SQC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000);
 
-      // Get logged-in user if any
-      let userId = null;
-      let orderId = 'SQC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000);
       try {
-        if (window.SQCAuth && window.sqc) {
-          const user = await window.SQCAuth.getUser();
-          userId = user?.id || null;
-          const result = await window.SQCOrders.saveOrder(cart, sub, ship, userId, shippingAddress, email);
-          if (result.success) orderId = result.order.id;
+        // Tokenize card via Square SDK
+        if (!squareCard) throw new Error('Payment form not ready. Please wait a moment and try again.');
+        const tokenResult = await squareCard.tokenize();
+        if (tokenResult.status !== 'OK') {
+          const msg = tokenResult.errors?.map(e => e.message).join(', ') || 'Card error';
+          throw new Error(msg);
         }
+
+        // Get logged-in user
+        let userId = null;
+        try {
+          if (window.SQCAuth && window.sqc) {
+            const user = await window.SQCAuth.getUser();
+            userId = user?.id || null;
+          }
+        } catch(e) {}
+
+        // Snapshot cart for confirmation display
+        localStorage.setItem('sqc_cart_snapshot', JSON.stringify(cart));
+
+        // Call our serverless API to charge the card + save order + decrement inventory
+        const resp = await fetch('/api/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceId: tokenResult.token,
+            amount: total,
+            orderId,
+            items: cart,
+            email,
+            shippingAddress,
+            userId,
+          }),
+        });
+
+        const result = await resp.json();
+        if (!result.success) throw new Error(result.error || 'Payment failed');
+
+        // Clear cart
+        cart = [];
+        saveCart();
+
+        // Render confirmation
+        document.getElementById('confirm-order-num').textContent = 'Order #' + orderId;
+        document.getElementById('confirm-total').textContent = fmt(total);
+        const savedItems = JSON.parse(localStorage.getItem('sqc_cart_snapshot') || '[]');
+        const itemsEl = document.getElementById('confirm-items-list');
+        if (itemsEl) {
+          itemsEl.innerHTML = savedItems.map(i => `
+            <div class="confirm-item-row">
+              <span class="confirm-item-name">${i.name} × ${i.qty}</span>
+              <span class="confirm-item-price">${fmt(i.price * i.qty)}</span>
+            </div>
+          `).join('');
+        }
+
+        goToStep(4);
+
       } catch(e) {
-        console.warn('Supabase order save failed, falling back:', e);
-        // Fallback: save to localStorage
-        let orders = [];
-        try { orders = JSON.parse(localStorage.getItem('sqc_orders') || '[]'); } catch(e2) {}
-        orders.unshift({ id: orderId, date: new Date().toISOString(), items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })), total, status: 'Processing' });
-        localStorage.setItem('sqc_orders', JSON.stringify(orders));
+        errEl.textContent = e.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Place Order →';
       }
-
-      // Clear cart
-      cart = [];
-      saveCart();
-
-      btn.disabled = false;
-      btn.textContent = 'Place Order';
-
-      // Render confirmation
-      document.getElementById('confirm-order-num').textContent = 'Order #' + orderId;
-      document.getElementById('confirm-total').textContent = fmt(total);
-      const itemsEl = document.getElementById('confirm-items-list');
-      itemsEl.innerHTML = cart.map ? '' : '';
-      // Re-use the saved cart snapshot for display
-      const savedItems = JSON.parse(localStorage.getItem('sqc_cart_snapshot') || '[]');
-      if (itemsEl && savedItems.length) {
-        itemsEl.innerHTML = savedItems.map(i => `
-          <div class="confirm-item-row">
-            <span class="confirm-item-name">${i.name} × ${i.qty}</span>
-            <span class="confirm-item-price">${fmt(i.price * i.qty)}</span>
-          </div>
-        `).join('');
-      }
-
-      goToStep(4);
-    });
-
-    // Snapshot cart before it gets cleared
-    document.getElementById('btn-place-order').addEventListener('mousedown', function() {
-      localStorage.setItem('sqc_cart_snapshot', JSON.stringify(cart));
     });
 
     // ── Init ──
