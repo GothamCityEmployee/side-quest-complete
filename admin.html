@@ -300,42 +300,43 @@
     document.getElementById('app').style.display = 'block';
   }
 
-  // ── Data ──────────────────────────────────────────────────────────────────
-  function getAllProducts() {
-    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-    // Merge: local overrides base by id
-    const map = {};
-    (products || []).forEach(p => map[p.id] = p);
-    local.forEach(p => map[p.id] = p);
-    return Object.values(map);
+  // ── Data (Supabase) ───────────────────────────────────────────────────────
+  async function getAllProducts() {
+    const { data, error } = await window.sqc
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data.map(r => ({
+      id:          r.id,
+      name:        r.name,
+      category:    r.category,
+      categorySlug: r.category_slug,
+      price:       parseFloat(r.price),
+      cost:        parseFloat(r.cost_price || 0),
+      condition:   r.condition,
+      image:       r.image_url || '',
+      bg:          r.bg || 'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
+      emoji:       r.emoji || '🎮',
+      badge:       r.badge,
+      inStock:     r.in_stock,
+      featured:    r.featured,
+      description: r.description || '',
+      console:     r.console || null,
+    }));
   }
 
-  function saveToLocal(p) {
-    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-    const idx = local.findIndex(x => x.id === p.id);
-    if (idx >= 0) local[idx] = p; else local.push(p);
-    localStorage.setItem(LS_KEY, JSON.stringify(local));
-  }
-
-  function deleteProduct(id) {
+  async function deleteProduct(id) {
     if (!confirm('Delete this product?')) return;
-    const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-    const existing = local.find(x => x.id === id);
-    if (existing) {
-      const updated = local.filter(x => x.id !== id);
-      localStorage.setItem(LS_KEY, JSON.stringify(updated));
-    } else {
-      // Mark base product as deleted
-      const all = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-      const base = (products || []).find(p => p.id === id);
-      if (base) { all.push({...base, deleted: true}); localStorage.setItem(LS_KEY, JSON.stringify(all)); }
-    }
+    const { error } = await window.sqc.from('products').delete().eq('id', id);
+    if (error) { alert('Error deleting: ' + error.message); return; }
+    window.SQCProducts.clearCache();
     renderAll();
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-  function renderAll() {
-    const all = getAllProducts().filter(p => !p.deleted);
+  async function renderAll() {
+    const all = await getAllProducts();
     renderStats(all);
     renderTable(all);
   }
@@ -423,36 +424,53 @@
     document.getElementById('prev-margin').textContent = cost > 0 ? `${margin.toFixed(0)}%` : '—';
   }
 
-  function saveProduct() {
+  async function saveProduct() {
     const name = document.getElementById('f-name').value.trim();
     if (!name) { alert('Product name is required.'); return; }
-    const price = parseFloat(document.getElementById('f-price').value) || 0;
-    const cost  = parseFloat(document.getElementById('f-cost').value)  || 0;
-    const all = getAllProducts();
-    const newId = editingId || (Math.max(0, ...all.map(p => p.id)) + 1);
-    const p = {
-      id: newId,
+    const price    = parseFloat(document.getElementById('f-price').value)   || 0;
+    const cost     = parseFloat(document.getElementById('f-cost').value)    || 0;
+    const category = document.getElementById('f-cat').value;
+    const catSlug  = category.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+    const row = {
       name,
-      category:    document.getElementById('f-cat').value,
-      condition:   document.getElementById('f-cond').value,
-      console:     document.getElementById('f-cat').value === 'Video Games' ? document.getElementById('f-console').value : undefined,
-      cost,
+      category,
+      category_slug: catSlug,
+      condition:     document.getElementById('f-cond').value,
+      console:       category === 'Video Games' ? document.getElementById('f-console').value : null,
+      cost_price:    cost,
       price,
-      description: document.getElementById('f-desc').value.trim(),
-      image:       document.getElementById('f-img').value.trim() || 'images/products/placeholder.jpg',
-      inStock:     document.getElementById('f-stock').checked,
-      featured:    document.getElementById('f-featured').checked,
-      categorySlug: document.getElementById('f-cat').value.toLowerCase().replace(/[^a-z0-9]/g,'-'),
-      emoji: '🎮',
-      bg: 'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
+      description:   document.getElementById('f-desc').value.trim(),
+      image_url:     document.getElementById('f-img').value.trim() || null,
+      in_stock:      document.getElementById('f-stock').checked,
+      featured:      document.getElementById('f-featured').checked,
+      emoji:         '🎮',
+      bg:            'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
     };
-    saveToLocal(p);
+
+    const btn = document.querySelector('#modal .btn-green');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    let error;
+    if (editingId) {
+      ({ error } = await window.sqc.from('products').update(row).eq('id', editingId));
+    } else {
+      ({ error } = await window.sqc.from('products').insert(row));
+    }
+
+    btn.disabled = false; btn.textContent = 'Save Product';
+
+    if (error) { alert('Error saving: ' + error.message); return; }
+    window.SQCProducts.clearCache();
     closeModal();
     renderAll();
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  if (sessionStorage.getItem('sqc_admin')) renderAll();
+  if (sessionStorage.getItem('sqc_admin')) {
+    if (window.sqc) renderAll();
+    else window.addEventListener('sqc:ready', renderAll, { once: true });
+  }
 </script>
 </body>
 </html>
