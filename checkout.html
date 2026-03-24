@@ -524,6 +524,9 @@
 
   </div><!-- /checkout-wrap -->
 
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="orders.js"></script>
   <script>
   (function() {
     // ── State ──
@@ -673,45 +676,74 @@
     });
 
     // ── Place order ──
-    document.getElementById('btn-place-order').addEventListener('click', function() {
+    document.getElementById('btn-place-order').addEventListener('click', async function() {
+      const btn = document.getElementById('btn-place-order');
+      btn.disabled = true;
+      btn.textContent = 'Placing Order...';
+
       const sub = getSubtotal();
       const ship = getShipping(sub);
       const total = sub + ship;
-      const now = new Date();
-      const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
-      const rand = Math.floor(Math.random() * 9000 + 1000);
-      const orderId = 'SQC-' + dateStr + '-' + rand;
 
-      const order = {
-        id: orderId,
-        date: now.toISOString(),
-        items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
-        total: total,
-        status: 'Processing'
+      // Collect shipping address
+      const shippingAddress = {
+        firstName: document.getElementById('s-first')?.value || '',
+        lastName:  document.getElementById('s-last')?.value  || '',
+        address:   document.getElementById('s-address')?.value || '',
+        city:      document.getElementById('s-city')?.value  || '',
+        state:     document.getElementById('s-state')?.value || '',
+        zip:       document.getElementById('s-zip')?.value   || '',
       };
+      const email = document.getElementById('s-email')?.value || '';
 
-      // Save to orders
-      let orders = [];
-      try { orders = JSON.parse(localStorage.getItem('sqc_orders') || '[]'); } catch(e) {}
-      orders.unshift(order);
-      localStorage.setItem('sqc_orders', JSON.stringify(orders));
+      // Get logged-in user if any
+      let userId = null;
+      let orderId = 'SQC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000);
+      try {
+        if (window.SQCAuth && window.sqc) {
+          const user = await window.SQCAuth.getUser();
+          userId = user?.id || null;
+          const result = await window.SQCOrders.saveOrder(cart, sub, ship, userId, shippingAddress, email);
+          if (result.success) orderId = result.order.id;
+        }
+      } catch(e) {
+        console.warn('Supabase order save failed, falling back:', e);
+        // Fallback: save to localStorage
+        let orders = [];
+        try { orders = JSON.parse(localStorage.getItem('sqc_orders') || '[]'); } catch(e2) {}
+        orders.unshift({ id: orderId, date: new Date().toISOString(), items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })), total, status: 'Processing' });
+        localStorage.setItem('sqc_orders', JSON.stringify(orders));
+      }
 
       // Clear cart
       cart = [];
       saveCart();
 
+      btn.disabled = false;
+      btn.textContent = 'Place Order';
+
       // Render confirmation
       document.getElementById('confirm-order-num').textContent = 'Order #' + orderId;
       document.getElementById('confirm-total').textContent = fmt(total);
       const itemsEl = document.getElementById('confirm-items-list');
-      itemsEl.innerHTML = order.items.map(i => `
-        <div class="confirm-item-row">
-          <span class="confirm-item-name">${i.name} × ${i.qty}</span>
-          <span class="confirm-item-price">${fmt(i.price * i.qty)}</span>
-        </div>
-      `).join('');
+      itemsEl.innerHTML = cart.map ? '' : '';
+      // Re-use the saved cart snapshot for display
+      const savedItems = JSON.parse(localStorage.getItem('sqc_cart_snapshot') || '[]');
+      if (itemsEl && savedItems.length) {
+        itemsEl.innerHTML = savedItems.map(i => `
+          <div class="confirm-item-row">
+            <span class="confirm-item-name">${i.name} × ${i.qty}</span>
+            <span class="confirm-item-price">${fmt(i.price * i.qty)}</span>
+          </div>
+        `).join('');
+      }
 
       goToStep(4);
+    });
+
+    // Snapshot cart before it gets cleared
+    document.getElementById('btn-place-order').addEventListener('mousedown', function() {
+      localStorage.setItem('sqc_cart_snapshot', JSON.stringify(cart));
     });
 
     // ── Init ──

@@ -1,15 +1,45 @@
+// main.js — SQC Storefront Logic (Supabase-backed)
+
 // ─── State ────────────────────────────────────────────────────────────────────
 let cart = JSON.parse(localStorage.getItem('sqc-cart')) || [];
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  renderProducts(products);
   renderCartItems();
   updateCartCount();
   initEventListeners();
   initScrollSpy();
   initHeaderScroll();
+
+  // Wait for Supabase client to be ready, then load products
+  if (window.sqc) {
+    loadProducts();
+  } else {
+    window.addEventListener('sqc:ready', loadProducts, { once: true });
+  }
 });
+
+// ─── Load Products from Supabase ──────────────────────────────────────────────
+async function loadProducts(categorySlug) {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+
+  grid.innerHTML = `<div class="loading-state"><span>Loading inventory...</span></div>`;
+
+  let list;
+  if (!categorySlug || categorySlug === 'all') {
+    list = await window.SQCProducts.getAll();
+  } else {
+    list = await window.SQCProducts.getByCategory(categorySlug);
+  }
+
+  if (!list || list.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><p>No products found.</p></div>`;
+    return;
+  }
+
+  renderProducts(list);
+}
 
 // ─── Product Rendering ────────────────────────────────────────────────────────
 function renderProducts(list) {
@@ -45,8 +75,8 @@ function createProductCard(product) {
 }
 
 // ─── Cart Core ────────────────────────────────────────────────────────────────
-function addToCart(productId) {
-  const product = products.find(p => p.id === productId);
+async function addToCart(productId) {
+  const product = await window.SQCProducts.getById(productId);
   if (!product) return;
 
   const existing = cart.find(item => item.id === productId);
@@ -147,8 +177,8 @@ function closeCartDrawer() {
 }
 
 // ─── Product Modal ────────────────────────────────────────────────────────────
-function openProductModal(productId) {
-  const product = products.find(p => p.id === productId);
+async function openProductModal(productId) {
+  const product = await window.SQCProducts.getById(productId);
   if (!product) return;
 
   const modal = document.getElementById('product-modal');
@@ -185,24 +215,20 @@ function flashAddedEffect(productId) {
 }
 
 // ─── Category Filter ──────────────────────────────────────────────────────────
-function filterProducts(categorySlug) {
-  const filtered = categorySlug === 'all'
-    ? products
-    : products.filter(p => p.categorySlug === categorySlug);
-
-  renderProducts(filtered);
-
+async function filterProducts(categorySlug) {
   const heading = document.querySelector('#shop .section-title');
   if (heading) {
-    if (categorySlug === 'all') {
-      heading.textContent = 'Featured Products';
-    } else {
-      const name = products.find(p => p.categorySlug === categorySlug)?.category || 'Products';
-      heading.textContent = name;
-    }
+    heading.textContent = categorySlug === 'all' ? 'Featured Products' : '...';
   }
 
-  // Scroll to shop
+  await loadProducts(categorySlug);
+
+  if (heading && categorySlug !== 'all') {
+    const all = await window.SQCProducts.getAll();
+    const cat = all.find(p => p.categorySlug === categorySlug)?.category || 'Products';
+    heading.textContent = cat;
+  }
+
   document.getElementById('shop').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -214,12 +240,7 @@ function initHeaderScroll() {
 
   window.addEventListener('scroll', () => {
     const y = window.scrollY;
-    if (y > 60) {
-      header.classList.add('scrolled');
-    } else {
-      header.classList.remove('scrolled');
-    }
-    // Hide on scroll down, show on scroll up
+    header.classList.toggle('scrolled', y > 60);
     if (y > lastY && y > 200) {
       header.classList.add('hidden');
     } else {
@@ -290,7 +311,7 @@ function initEventListeners() {
       }
     });
 
-    // Keyboard support for product cards
+    // Keyboard support
     productsGrid.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         const card = e.target.closest('.product-card');
@@ -323,7 +344,6 @@ function initEventListeners() {
       const open = navLinks.classList.toggle('open');
       menuToggle.setAttribute('aria-expanded', open);
     });
-
     navLinks.querySelectorAll('a').forEach(link => {
       link.addEventListener('click', () => {
         navLinks.classList.remove('open');
@@ -337,7 +357,7 @@ function initEventListeners() {
     tile.addEventListener('click', () => filterProducts(tile.dataset.filter));
   });
 
-  // Keyboard: Escape closes drawers/modals
+  // Escape closes drawers/modals
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeCartDrawer();

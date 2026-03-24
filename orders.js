@@ -1,29 +1,28 @@
-// orders.js — SQC Order Management
+// orders.js — SQC Order Management (Supabase-backed)
 // Exports: window.SQCOrders
 
 (function () {
   'use strict';
 
-  const ORDERS_KEY = 'sqc_orders';
-  const USERS_KEY = 'sqc_users';
+  window.SQCOrders = {
 
-  const SQCOrders = {
     // ── ID Generation ──────────────────────────────────────────────────────────
     generateOrderId() {
-      const now = new Date();
-      const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const rand = String(Math.floor(Math.random() * 9000) + 1000);
       return `SQC-${date}-${rand}`;
     },
 
     // ── Save Order ─────────────────────────────────────────────────────────────
-    saveOrder(cartItems, total, userId) {
+    async saveOrder(cartItems, subtotal, shipping, userId, shippingAddress, email) {
       const orderId = this.generateOrderId();
+      const total = subtotal + shipping;
       const pointsEarned = userId ? Math.round(total) : 0;
 
       const order = {
         id: orderId,
-        date: new Date().toISOString(),
+        user_id: userId || null,
+        email: email || null,
         items: cartItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -32,65 +31,58 @@
           image: item.image || null,
           emoji: item.emoji || '🎮'
         })),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        shipping: parseFloat(shipping.toFixed(2)),
         total: parseFloat(total.toFixed(2)),
         status: 'Processing',
-        pointsEarned,
-        userId: userId || null
+        shipping_address: shippingAddress || null,
+        points_earned: pointsEarned,
       };
 
-      // Persist to global orders list
-      const orders = this._getAllOrders();
-      orders.unshift(order);
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+      const { error } = await window.sqc.from('orders').insert(order);
 
-      // Attach to user record + award points
-      if (userId) {
-        try {
-          const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-          const idx = users.findIndex(u => u.id === userId);
-          if (idx !== -1) {
-            users[idx].orderHistory = [orderId, ...(users[idx].orderHistory || [])];
-            users[idx].points = (users[idx].points || 0) + pointsEarned;
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
-          }
-        } catch (e) {
-          console.error('SQCOrders: failed to update user record', e);
-        }
+      if (error) {
+        console.error('SQCOrders.saveOrder error:', error.message);
+        return { success: false, error: error.message };
       }
 
-      return { order, pointsEarned };
+      // Award loyalty points
+      if (userId && pointsEarned > 0) {
+        await window.SQCAuth.addPoints(userId, pointsEarned);
+      }
+
+      return { success: true, order: { ...order }, pointsEarned };
     },
 
-    // ── Retrieve Orders ────────────────────────────────────────────────────────
-    getOrders(userId) {
-      if (!userId) return [];
-      try {
-        const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-        const user = users.find(u => u.id === userId);
-        if (!user || !user.orderHistory || !user.orderHistory.length) return [];
+    // ── Get orders for current user ────────────────────────────────────────────
+    async getMyOrders() {
+      const user = await window.SQCAuth.getUser();
+      if (!user) return [];
 
-        const allOrders = this._getAllOrders();
-        return user.orderHistory
-          .map(id => allOrders.find(o => o.id === id))
-          .filter(Boolean);
-      } catch {
+      const { data, error } = await window.sqc
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('SQCOrders.getMyOrders error:', error.message);
         return [];
       }
+
+      return data || [];
     },
 
-    getOrderById(orderId) {
-      return this._getAllOrders().find(o => o.id === orderId) || null;
-    },
+    // ── Get single order ───────────────────────────────────────────────────────
+    async getOrderById(orderId) {
+      const { data, error } = await window.sqc
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
 
-    // ── Internal ───────────────────────────────────────────────────────────────
-    _getAllOrders() {
-      try {
-        return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
-      } catch {
-        return [];
-      }
-    }
+      if (error) return null;
+      return data;
+    },
   };
-
-  window.SQCOrders = SQCOrders;
 })();

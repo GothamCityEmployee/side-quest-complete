@@ -1486,3 +1486,29 @@ footer {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* ─── Loading / Empty States ───────────────────────────────────────────────── */
+.loading-state,
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: var(--text-muted, #888);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.loading-state span::after {
+  content: '';
+  display: inline-block;
+  animation: ellipsis 1.4s infinite;
+}
+
+@keyframes ellipsis {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
