@@ -137,6 +137,28 @@
     .btn-cancel:hover { border-color: var(--text); color: var(--text); }
 
     .empty { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
+
+    /* CHANGE PASSWORD MODAL */
+    #pw-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    #pw-modal-overlay.open { display: flex; }
+    .pw-modal {
+      background: var(--card); border: 1px solid var(--purple); border-radius: 14px;
+      padding: 32px; width: 100%; max-width: 400px;
+    }
+    .pw-modal h3 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--purple); margin-bottom: 20px; }
+    .pw-modal .form-group { margin-bottom: 14px; }
+    .pw-modal .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .pw-modal .form-group input {
+      width: 100%; padding: 10px 14px; background: #222; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px;
+    }
+    .pw-modal .form-group input:focus { outline: none; border-color: var(--purple); }
+    .pw-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
+    .pw-msg.success { color: var(--green); }
+    .pw-msg.error   { color: #ff4444; }
   </style>
 </head>
 <body>
@@ -158,9 +180,34 @@
     <h1>⚙️ SQC Admin</h1>
     <div style="display:flex;align-items:center;gap:16px;">
       <a href="index.html" style="color:var(--muted);font-size:13px;text-decoration:none;">← View Store</a>
+      <button class="logout-btn" onclick="openPwModal()">🔑 Change Password</button>
       <button class="logout-btn" onclick="doLogout()">Logout</button>
     </div>
   </header>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="pw-modal-overlay">
+    <div class="pw-modal">
+      <h3>🔑 Change Password</h3>
+      <div class="form-group">
+        <label>Current Password</label>
+        <input type="password" id="pw-current" placeholder="Enter current password" />
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="pw-new" placeholder="Enter new password" />
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" id="pw-confirm" placeholder="Confirm new password" />
+      </div>
+      <div class="pw-msg" id="pw-msg"></div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-green" onclick="doChangePassword()" style="flex:1">Update Password</button>
+        <button class="btn-cancel" onclick="closePwModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <main>
     <!-- STATS -->
@@ -272,14 +319,31 @@
 <script src="auth.js"></script>
 <script src="products.js"></script>
 <script>
-  const ADMIN_PW = 'sidequestadmin';
+  const DEFAULT_PW = 'sidequestadmin';
   const LS_KEY = 'sqc_products';
   let editingId = null;
 
+  // ── Password helpers (stored in Supabase settings table) ──────────────────
+  async function getAdminPassword() {
+    try {
+      const { data } = await window.sqc
+        .from('settings')
+        .select('value')
+        .eq('key', 'admin_password')
+        .single();
+      return data?.value || DEFAULT_PW;
+    } catch { return DEFAULT_PW; }
+  }
+
+  async function setAdminPassword(newPw) {
+    await window.sqc.from('settings').upsert({ key: 'admin_password', value: newPw }, { onConflict: 'key' });
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────
-  function doLogin() {
+  async function doLogin() {
     const pw = document.getElementById('pw-input').value;
-    if (pw === ADMIN_PW) {
+    const correct = await getAdminPassword();
+    if (pw === correct) {
       sessionStorage.setItem('sqc_admin', '1');
       document.getElementById('login-overlay').style.display = 'none';
       document.getElementById('app').style.display = 'block';
@@ -293,6 +357,49 @@
   function doLogout() {
     sessionStorage.removeItem('sqc_admin');
     location.reload();
+  }
+
+  // ── Change Password ────────────────────────────────────────────────────────
+  function openPwModal() {
+    document.getElementById('pw-current').value = '';
+    document.getElementById('pw-new').value = '';
+    document.getElementById('pw-confirm').value = '';
+    document.getElementById('pw-msg').textContent = '';
+    document.getElementById('pw-msg').className = 'pw-msg';
+    document.getElementById('pw-modal-overlay').classList.add('open');
+  }
+
+  function closePwModal() {
+    document.getElementById('pw-modal-overlay').classList.remove('open');
+  }
+
+  async function doChangePassword() {
+    const current = document.getElementById('pw-current').value;
+    const newPw   = document.getElementById('pw-new').value;
+    const confirm = document.getElementById('pw-confirm').value;
+    const msg     = document.getElementById('pw-msg');
+
+    const correct = await getAdminPassword();
+    if (current !== correct) {
+      msg.textContent = 'Current password is incorrect.';
+      msg.className = 'pw-msg error';
+      return;
+    }
+    if (newPw.length < 6) {
+      msg.textContent = 'New password must be at least 6 characters.';
+      msg.className = 'pw-msg error';
+      return;
+    }
+    if (newPw !== confirm) {
+      msg.textContent = 'Passwords do not match.';
+      msg.className = 'pw-msg error';
+      return;
+    }
+
+    await setAdminPassword(newPw);
+    msg.textContent = '✅ Password updated!';
+    msg.className = 'pw-msg success';
+    setTimeout(closePwModal, 1500);
   }
 
   if (sessionStorage.getItem('sqc_admin')) {
