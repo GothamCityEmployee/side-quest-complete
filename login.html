@@ -466,7 +466,7 @@
       });
 
       // ── Login submit ───────────────────────────────────────────────────────
-      document.getElementById('form-login').addEventListener('submit', function (e) {
+      document.getElementById('form-login').addEventListener('submit', async function (e) {
         e.preventDefault();
         const email = document.getElementById('login-email');
         const password = document.getElementById('login-password');
@@ -496,28 +496,25 @@
         btn.disabled = true;
         btn.textContent = 'Logging in...';
 
-        const result = SQCAuth.login(email.value.trim(), password.value, remember);
-
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = 'Login';
-
+        try {
+          const result = await SQCAuth.login(email.value.trim(), password.value, remember);
           if (!result.success) {
             showAlert(alert, result.error, 'error');
-            if (result.error.includes('password')) {
-              setFieldError(password, document.getElementById('login-password-err'), result.error);
-            }
-            return;
+          } else {
+            showAlert(alert, 'Welcome back! Redirecting...', 'success');
+            const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
+            setTimeout(() => location.replace(redirect), 900);
           }
-
-          showAlert(alert, 'Welcome back, ' + result.user.name.split(' ')[0] + '! Redirecting...', 'success');
-          const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
-          setTimeout(() => location.replace(redirect), 900);
-        }, 300);
+        } catch (err) {
+          showAlert(alert, 'Something went wrong. Please try again.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Login';
+        }
       });
 
       // ── Register submit ────────────────────────────────────────────────────
-      document.getElementById('form-register').addEventListener('submit', function (e) {
+      document.getElementById('form-register').addEventListener('submit', async function (e) {
         e.preventDefault();
         const name = document.getElementById('reg-name');
         const email = document.getElementById('reg-email');
@@ -563,23 +560,20 @@
         btn.disabled = true;
         btn.textContent = 'Creating account...';
 
-        const result = SQCAuth.register(name.value.trim(), email.value.trim(), password.value);
-
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = 'Create Account';
-
+        try {
+          const result = await SQCAuth.register(name.value.trim(), email.value.trim(), password.value);
           if (!result.success) {
             showAlert(alert, result.error, 'error');
-            if (result.error.includes('email')) {
-              setFieldError(email, document.getElementById('reg-email-err'), result.error);
-            }
-            return;
+          } else {
+            showAlert(alert, '🎮 Account created! Welcome to Side Quest Complete!', 'success');
+            setTimeout(() => location.replace('account.html'), 1200);
           }
-
-          showAlert(alert, 'Account created! Welcome to Side Quest Complete!', 'success');
-          setTimeout(() => location.replace('account.html'), 1000);
-        }, 300);
+        } catch (err) {
+          showAlert(alert, 'Something went wrong. Please try again.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        }
       });
 
       // Check hash for default tab
