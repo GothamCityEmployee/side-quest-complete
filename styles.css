@@ -13,8 +13,8 @@
 
   --neon:         #39ff14;
   --neon-dim:     #2bc810;
-  --neon-glow:    0 0 8px #39ff14, 0 0 20px rgba(57, 255, 20, 0.4);
-  --neon-glow-lg: 0 0 12px #39ff14, 0 0 30px rgba(57, 255, 20, 0.5), 0 0 60px rgba(57, 255, 20, 0.2);
+  --neon-glow:    0 0 4px rgba(57, 255, 20, 0.5);
+  --neon-glow-lg: 0 0 6px rgba(57, 255, 20, 0.4), 0 0 16px rgba(57, 255, 20, 0.2);
 
   --color-purple:   #b03af5;
   --purple-dim:     #8e2ec4;
@@ -70,7 +70,7 @@ ul { list-style: none; }
 .section-title {
   font-family: var(--font-pixel);
   font-size: clamp(0.9rem, 2vw, 1.25rem);
-  color: var(--neon);
+  color: #c8ffb0;
   text-shadow: var(--neon-glow);
   letter-spacing: 0.05em;
   line-height: 1.8;

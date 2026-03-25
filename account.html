@@ -811,14 +811,15 @@
   <script src="wishlist.js"></script>
   <script src="orders.js"></script>
   <script>
-    (function () {
+    (async function () {
       // ── Auth guard ─────────────────────────────────────────────────────────
-      if (!window.SQCAuth || !SQCAuth.isLoggedIn()) {
+      const loggedIn = await SQCAuth.isLoggedIn();
+      if (!loggedIn) {
         location.replace('login.html?redirect=account.html');
         return;
       }
 
-      let user = SQCAuth.getCurrentUser();
+      let user = await SQCAuth.getUser();
 
       // ── Section navigation ─────────────────────────────────────────────────
       function showSection(name) {

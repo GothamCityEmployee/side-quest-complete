@@ -239,6 +239,26 @@
         <tbody id="product-table"></tbody>
       </table>
     </div>
+
+    <!-- BLOG SECTION -->
+    <div class="toolbar" style="margin-top:48px;">
+      <h2>📝 Blog Posts</h2>
+      <button class="btn-purple" onclick="openBlogModal()">+ Add Blog Post</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Emoji</th>
+            <th>Title</th>
+            <th>Tag</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="blog-table"></tbody>
+      </table>
+    </div>
   </main>
 </div>
 
@@ -297,8 +317,15 @@
       <textarea id="f-desc" placeholder="Describe the item, condition details, what's included..."></textarea>
     </div>
     <div class="form-group">
-      <label>Image Path (e.g. images/products/product-25.jpg)</label>
-      <input type="text" id="f-img" placeholder="images/products/product-25.jpg" />
+      <label>Image</label>
+      <!-- Upload button — stored as base64 data URL for demo (no storage configured yet) -->
+      <input type="file" id="f-img-file" accept="image/*" style="display:none" onchange="handleImageUpload(this)" />
+      <button type="button" class="btn-sm btn-edit" style="margin-bottom:8px;width:auto" onclick="document.getElementById('f-img-file').click()">📁 Upload Image</button>
+      <div id="f-img-preview" style="display:none;margin-bottom:8px;">
+        <img id="f-img-preview-img" src="" alt="Preview" style="max-width:120px;max-height:120px;border-radius:6px;object-fit:cover;border:1px solid #333" />
+      </div>
+      <label style="margin-top:4px">Or enter image URL manually</label>
+      <input type="text" id="f-img" placeholder="https://... or images/products/product-25.jpg" oninput="syncImgPreview()" />
     </div>
     <div class="toggle-row">
       <label class="toggle-label">
@@ -311,6 +338,45 @@
     <div class="modal-actions">
       <button class="btn-green" onclick="saveProduct()" style="flex:1">Save Product</button>
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- BLOG MODAL -->
+<div class="modal-overlay" id="blog-modal">
+  <div class="modal">
+    <h3 id="blog-modal-title">+ Add Blog Post</h3>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="bf-title" placeholder="e.g. Top 10 N64 Games..." />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tag</label>
+        <input type="text" id="bf-tag" placeholder="e.g. Retro Gaming" />
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="text" id="bf-date" placeholder="e.g. Mar 10, 2025" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Thumbnail Emoji</label>
+        <input type="text" id="bf-emoji" placeholder="🎮" maxlength="4" />
+      </div>
+      <div class="form-group">
+        <label>Thumbnail Background (CSS gradient or color)</label>
+        <input type="text" id="bf-bg" placeholder="linear-gradient(135deg, #0d1b2a, #1b263b)" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Excerpt</label>
+      <textarea id="bf-excerpt" placeholder="Short summary of the blog post..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-green" onclick="saveBlogPost()" style="flex:1">Save Post</button>
+      <button class="btn-cancel" onclick="closeBlogModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -348,6 +414,7 @@
       document.getElementById('login-overlay').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       renderAll();
+      renderBlogTable();
     } else {
       document.getElementById('login-err').style.display = 'block';
     }
@@ -500,6 +567,8 @@
     document.getElementById('f-price').value   = p?.price || '';
     document.getElementById('f-desc').value    = p?.description || '';
     document.getElementById('f-img').value     = p?.image || '';
+    document.getElementById('f-img-file').value = '';
+    if (p?.image) showImgPreview(p.image); else document.getElementById('f-img-preview').style.display = 'none';
     document.getElementById('f-stock').checked   = p ? !!p.inStock : true;
     document.getElementById('f-featured').checked = p ? !!p.featured : false;
     toggleConsole();
@@ -512,9 +581,36 @@
     editingId = null;
   }
 
-  function editProduct(id) {
-    const p = getAllProducts().find(x => x.id === id);
+  async function editProduct(id) {
+    const all = await getAllProducts();
+    const p = all.find(x => x.id === id);
     if (p) openModal(p);
+  }
+
+  // ── Image upload ──────────────────────────────────────────────────────────
+  function handleImageUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      document.getElementById('f-img').value = dataUrl;
+      showImgPreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function syncImgPreview() {
+    const val = document.getElementById('f-img').value.trim();
+    if (val) showImgPreview(val);
+    else { document.getElementById('f-img-preview').style.display = 'none'; }
+  }
+
+  function showImgPreview(src) {
+    const preview = document.getElementById('f-img-preview');
+    const img = document.getElementById('f-img-preview-img');
+    img.src = src;
+    preview.style.display = 'block';
   }
 
   function toggleConsole() {
@@ -573,10 +669,104 @@
     renderAll();
   }
 
+  // ── Blog (localStorage: sqc_blogs) ───────────────────────────────────────
+  const BLOG_KEY = 'sqc_blogs';
+  let editingBlogId = null;
+
+  function getBlogs() {
+    try { return JSON.parse(localStorage.getItem(BLOG_KEY) || '[]'); } catch(e) { return []; }
+  }
+
+  function saveBlogs(blogs) {
+    localStorage.setItem(BLOG_KEY, JSON.stringify(blogs));
+  }
+
+  function renderBlogTable() {
+    const blogs = getBlogs();
+    const tbody = document.getElementById('blog-table');
+    if (!blogs.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No blog posts yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = blogs.map(p => `<tr>
+      <td style="font-size:24px;text-align:center">${p.thumbEmoji || '📝'}</td>
+      <td><strong>${p.title}</strong></td>
+      <td><span class="cat-badge">${p.tag}</span></td>
+      <td style="color:var(--muted);font-size:12px">${p.date}</td>
+      <td>
+        <button class="btn-sm btn-edit" onclick="editBlogPost(${p.id})">Edit</button>
+        <button class="btn-sm btn-del" onclick="deleteBlogPost(${p.id})">Delete</button>
+      </td>
+    </tr>`).join('');
+  }
+
+  function openBlogModal(p = null) {
+    editingBlogId = p ? p.id : null;
+    document.getElementById('blog-modal-title').textContent = p ? '✏️ Edit Blog Post' : '+ Add Blog Post';
+    document.getElementById('bf-title').value  = p?.title || '';
+    document.getElementById('bf-tag').value    = p?.tag || '';
+    document.getElementById('bf-date').value   = p?.date || '';
+    document.getElementById('bf-emoji').value  = p?.thumbEmoji || '🎮';
+    document.getElementById('bf-bg').value     = p?.thumbBg || 'linear-gradient(135deg, #0d1b2a, #1b263b)';
+    document.getElementById('bf-excerpt').value = p?.excerpt || '';
+    document.getElementById('blog-modal').classList.add('open');
+  }
+
+  function closeBlogModal() {
+    document.getElementById('blog-modal').classList.remove('open');
+    editingBlogId = null;
+  }
+
+  function editBlogPost(id) {
+    const p = getBlogs().find(x => x.id === id);
+    if (p) openBlogModal(p);
+  }
+
+  function deleteBlogPost(id) {
+    if (!confirm('Delete this blog post?')) return;
+    const blogs = getBlogs().filter(x => x.id !== id);
+    saveBlogs(blogs);
+    renderBlogTable();
+  }
+
+  function saveBlogPost() {
+    const title = document.getElementById('bf-title').value.trim();
+    if (!title) { alert('Title is required.'); return; }
+    const blogs = getBlogs();
+    if (editingBlogId) {
+      const idx = blogs.findIndex(x => x.id === editingBlogId);
+      if (idx !== -1) {
+        blogs[idx] = {
+          id: editingBlogId,
+          title,
+          tag:       document.getElementById('bf-tag').value.trim() || 'General',
+          date:      document.getElementById('bf-date').value.trim() || '',
+          excerpt:   document.getElementById('bf-excerpt').value.trim(),
+          thumbEmoji: document.getElementById('bf-emoji').value.trim() || '🎮',
+          thumbBg:   document.getElementById('bf-bg').value.trim() || 'linear-gradient(135deg,#0d1b2a,#1b263b)',
+        };
+      }
+    } else {
+      const newId = Date.now();
+      blogs.unshift({
+        id: newId,
+        title,
+        tag:       document.getElementById('bf-tag').value.trim() || 'General',
+        date:      document.getElementById('bf-date').value.trim() || '',
+        excerpt:   document.getElementById('bf-excerpt').value.trim(),
+        thumbEmoji: document.getElementById('bf-emoji').value.trim() || '🎮',
+        thumbBg:   document.getElementById('bf-bg').value.trim() || 'linear-gradient(135deg,#0d1b2a,#1b263b)',
+      });
+    }
+    saveBlogs(blogs);
+    closeBlogModal();
+    renderBlogTable();
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   if (sessionStorage.getItem('sqc_admin')) {
-    if (window.sqc) renderAll();
-    else window.addEventListener('sqc:ready', renderAll, { once: true });
+    if (window.sqc) { renderAll(); renderBlogTable(); }
+    else window.addEventListener('sqc:ready', () => { renderAll(); renderBlogTable(); }, { once: true });
   }
 </script>
 </body>

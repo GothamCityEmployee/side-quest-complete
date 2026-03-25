@@ -394,9 +394,9 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    (function () {
+    (async function () {
       // ── Redirect if already logged in ──────────────────────────────────────
-      if (window.SQCAuth && SQCAuth.isLoggedIn()) {
+      if (window.SQCAuth && await SQCAuth.isLoggedIn()) {
         const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
         location.replace(redirect);
       }

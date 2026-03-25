@@ -517,10 +517,10 @@
 
     // ── Load cart ──
     function loadCart() {
-      try { cart = JSON.parse(localStorage.getItem('sqc_cart') || '[]'); } catch(e) { cart = []; }
+      try { cart = JSON.parse(localStorage.getItem('sqc-cart') || '[]'); } catch(e) { cart = []; }
     }
     function saveCart() {
-      localStorage.setItem('sqc_cart', JSON.stringify(cart));
+      localStorage.setItem('sqc-cart', JSON.stringify(cart));
       // update index.html cart count badge if opened in same tab
       window.dispatchEvent(new Event('storage'));
     }
@@ -710,7 +710,7 @@
         } catch(e) {}
 
         // Snapshot cart for confirmation display
-        localStorage.setItem('sqc_cart_snapshot', JSON.stringify(cart));
+        localStorage.setItem('sqc-cart-snapshot', JSON.stringify(cart));
 
         // Call our serverless API to charge the card + save order + decrement inventory
         const resp = await fetch('/api/create-payment', {
@@ -737,7 +737,7 @@
         // Render confirmation
         document.getElementById('confirm-order-num').textContent = 'Order #' + orderId;
         document.getElementById('confirm-total').textContent = fmt(total);
-        const savedItems = JSON.parse(localStorage.getItem('sqc_cart_snapshot') || '[]');
+        const savedItems = JSON.parse(localStorage.getItem('sqc-cart-snapshot') || '[]');
         const itemsEl = document.getElementById('confirm-items-list');
         if (itemsEl) {
           itemsEl.innerHTML = savedItems.map(i => `
