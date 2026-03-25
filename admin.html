@@ -370,6 +370,10 @@
       <label>Excerpt</label>
       <textarea id="bf-excerpt" placeholder="Short summary of the blog post..."></textarea>
     </div>
+    <div class="form-group">
+      <label>Full Content (HTML)</label>
+      <textarea id="bf-content" placeholder="Full article body — HTML is fine..." style="min-height:160px"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="btn-green" onclick="saveBlogPost()" style="flex:1">Save Post</button>
       <button class="btn-cancel" onclick="closeBlogModal()">Cancel</button>
@@ -669,33 +673,28 @@
     renderAll();
   }
 
-  // ── Blog (localStorage: sqc_blogs) ───────────────────────────────────────
-  const BLOG_KEY = 'sqc_blogs';
+  // ── Blog (Supabase) ───────────────────────────────────────────────────────
   let editingBlogId = null;
+  let _blogCache = [];
 
-  function getBlogs() {
-    try { return JSON.parse(localStorage.getItem(BLOG_KEY) || '[]'); } catch(e) { return []; }
-  }
-
-  function saveBlogs(blogs) {
-    localStorage.setItem(BLOG_KEY, JSON.stringify(blogs));
-  }
-
-  function renderBlogTable() {
-    const blogs = getBlogs();
+  async function renderBlogTable() {
     const tbody = document.getElementById('blog-table');
-    if (!blogs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading...</td></tr>';
+    const { data, error } = await window.sqc.from('blogs').select('*').order('created_at', { ascending: false });
+    if (error) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Error loading posts.</td></tr>'; return; }
+    _blogCache = data || [];
+    if (!_blogCache.length) {
       tbody.innerHTML = '<tr><td colspan="5" class="empty">No blog posts yet.</td></tr>';
       return;
     }
-    tbody.innerHTML = blogs.map(p => `<tr>
-      <td style="font-size:24px;text-align:center">${p.thumbEmoji || '📝'}</td>
+    tbody.innerHTML = _blogCache.map(p => `<tr>
+      <td style="font-size:24px;text-align:center">${p.thumb_emoji || '📝'}</td>
       <td><strong>${p.title}</strong></td>
       <td><span class="cat-badge">${p.tag}</span></td>
       <td style="color:var(--muted);font-size:12px">${p.date}</td>
       <td>
-        <button class="btn-sm btn-edit" onclick="editBlogPost(${p.id})">Edit</button>
-        <button class="btn-sm btn-del" onclick="deleteBlogPost(${p.id})">Delete</button>
+        <button class="btn-sm btn-edit" onclick="editBlogPost('${p.id}')">Edit</button>
+        <button class="btn-sm btn-del" onclick="deleteBlogPost('${p.id}')">Delete</button>
       </td>
     </tr>`).join('');
   }
@@ -703,12 +702,13 @@
   function openBlogModal(p = null) {
     editingBlogId = p ? p.id : null;
     document.getElementById('blog-modal-title').textContent = p ? '✏️ Edit Blog Post' : '+ Add Blog Post';
-    document.getElementById('bf-title').value  = p?.title || '';
-    document.getElementById('bf-tag').value    = p?.tag || '';
-    document.getElementById('bf-date').value   = p?.date || '';
-    document.getElementById('bf-emoji').value  = p?.thumbEmoji || '🎮';
-    document.getElementById('bf-bg').value     = p?.thumbBg || 'linear-gradient(135deg, #0d1b2a, #1b263b)';
+    document.getElementById('bf-title').value   = p?.title || '';
+    document.getElementById('bf-tag').value     = p?.tag || '';
+    document.getElementById('bf-date').value    = p?.date || '';
+    document.getElementById('bf-emoji').value   = p?.thumb_emoji || '🎮';
+    document.getElementById('bf-bg').value      = p?.thumb_bg || 'linear-gradient(135deg, #0d1b2a, #1b263b)';
     document.getElementById('bf-excerpt').value = p?.excerpt || '';
+    document.getElementById('bf-content').value = p?.content || '';
     document.getElementById('blog-modal').classList.add('open');
   }
 
@@ -718,47 +718,36 @@
   }
 
   function editBlogPost(id) {
-    const p = getBlogs().find(x => x.id === id);
+    const p = _blogCache.find(x => x.id === id);
     if (p) openBlogModal(p);
   }
 
-  function deleteBlogPost(id) {
+  async function deleteBlogPost(id) {
     if (!confirm('Delete this blog post?')) return;
-    const blogs = getBlogs().filter(x => x.id !== id);
-    saveBlogs(blogs);
+    const { error } = await window.sqc.from('blogs').delete().eq('id', id);
+    if (error) { alert('Error deleting: ' + error.message); return; }
     renderBlogTable();
   }
 
-  function saveBlogPost() {
+  async function saveBlogPost() {
     const title = document.getElementById('bf-title').value.trim();
     if (!title) { alert('Title is required.'); return; }
-    const blogs = getBlogs();
+    const row = {
+      title,
+      tag:        document.getElementById('bf-tag').value.trim() || 'General',
+      date:       document.getElementById('bf-date').value.trim() || '',
+      excerpt:    document.getElementById('bf-excerpt').value.trim(),
+      thumb_emoji: document.getElementById('bf-emoji').value.trim() || '🎮',
+      thumb_bg:   document.getElementById('bf-bg').value.trim() || 'linear-gradient(135deg,#0d1b2a,#1b263b)',
+      content:    document.getElementById('bf-content').value.trim() || null,
+    };
+    let error;
     if (editingBlogId) {
-      const idx = blogs.findIndex(x => x.id === editingBlogId);
-      if (idx !== -1) {
-        blogs[idx] = {
-          id: editingBlogId,
-          title,
-          tag:       document.getElementById('bf-tag').value.trim() || 'General',
-          date:      document.getElementById('bf-date').value.trim() || '',
-          excerpt:   document.getElementById('bf-excerpt').value.trim(),
-          thumbEmoji: document.getElementById('bf-emoji').value.trim() || '🎮',
-          thumbBg:   document.getElementById('bf-bg').value.trim() || 'linear-gradient(135deg,#0d1b2a,#1b263b)',
-        };
-      }
+      ({ error } = await window.sqc.from('blogs').update(row).eq('id', editingBlogId));
     } else {
-      const newId = Date.now();
-      blogs.unshift({
-        id: newId,
-        title,
-        tag:       document.getElementById('bf-tag').value.trim() || 'General',
-        date:      document.getElementById('bf-date').value.trim() || '',
-        excerpt:   document.getElementById('bf-excerpt').value.trim(),
-        thumbEmoji: document.getElementById('bf-emoji').value.trim() || '🎮',
-        thumbBg:   document.getElementById('bf-bg').value.trim() || 'linear-gradient(135deg,#0d1b2a,#1b263b)',
-      });
+      ({ error } = await window.sqc.from('blogs').insert(row));
     }
-    saveBlogs(blogs);
+    if (error) { alert('Error saving: ' + error.message); return; }
     closeBlogModal();
     renderBlogTable();
   }

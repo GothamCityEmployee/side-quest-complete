@@ -302,70 +302,42 @@
   </section>
   <script>
     (function() {
-      // Default blog posts — pre-populate localStorage on first load
-      var DEFAULT_BLOGS = [
-        {
-          id: 4,
-          title: "Retro Video Games Are Making a Huge Comeback",
-          tag: "Retro Gaming",
-          date: "March 25, 2026",
-          excerpt: "Retro games are hotter than ever. From old Nintendo cartridges to PS2 classics, here's why everyone is going back — and what's actually worth hunting for.",
-          thumbEmoji: "🕹️",
-          thumbBg: "linear-gradient(135deg, #2c3e50, #4ca1af)"
-        },
-        {
-          id: 1,
-          title: "Top 10 N64 Games You Totally Forgot Existed",
-          tag: "Retro Gaming",
-          date: "Mar 10, 2025",
-          excerpt: "Everyone knows Ocarina of Time and Mario 64. But the N64 library runs deep — and some of its weirdest, most underrated gems are sitting in bins at shops like ours right now for next to nothing. Here's our list.",
-          thumbEmoji: "🎮",
-          thumbBg: "linear-gradient(135deg, #0d1b2a, #1b263b)"
-        },
-        {
-          id: 2,
-          title: "Why the Original Game Boy Still Slaps in 2025",
-          tag: "Hardware",
-          date: "Feb 22, 2025",
-          excerpt: "No backlight. Four shades of greenish gray. A battery life measured in AA count. And yet — the original DMG-01 Game Boy remains one of the most satisfying gaming experiences ever made. Here's why we keep stocking them.",
-          thumbEmoji: "👾",
-          thumbBg: "linear-gradient(135deg, #1a472a, #40916c)"
-        },
-        {
-          id: 3,
-          title: "How to Spot a Fake Pokémon Card (Without Destroying It)",
-          tag: "Collecting",
-          date: "Jan 15, 2025",
-          excerpt: "The counterfeit Pokémon card market has gotten scarily good. But there are still telltale signs — texture, print quality, light test, even the smell — that separate originals from fakes. Our guide for collectors.",
-          thumbEmoji: "✨",
-          thumbBg: "linear-gradient(135deg, #f6d365, #fda085)"
-        }
-      ];
+      var grid = document.getElementById('blog-grid');
+      grid.innerHTML = '<p style="color:#666;text-align:center;padding:20px">Loading...</p>';
 
-      // Pre-populate localStorage with defaults if not yet set
-      if (!localStorage.getItem('sqc_blogs_v2')) {
-        localStorage.setItem('sqc_blogs_v2', JSON.stringify(DEFAULT_BLOGS));
+      async function loadBlogPreview() {
+        var { data, error } = await window.sqc
+          .from('blogs')
+          .select('id,title,tag,date,excerpt,thumb_emoji,thumb_bg')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (error || !data || !data.length) {
+          grid.innerHTML = '<p style="color:#666;text-align:center;padding:20px">Check back soon for posts!</p>';
+          return;
+        }
+
+        grid.innerHTML = data.map(function(p) {
+          return '<article class="blog-card">' +
+            '<div class="blog-thumb" style="background:' + p.thumb_bg + '">' + p.thumb_emoji + '</div>' +
+            '<div class="blog-body">' +
+              '<div class="blog-meta">' +
+                '<span class="blog-tag">' + p.tag + '</span>' +
+                '<span class="blog-date">' + p.date + '</span>' +
+              '</div>' +
+              '<h3 class="blog-title">' + p.title + '</h3>' +
+              '<p class="blog-excerpt">' + p.excerpt + '</p>' +
+              '<a class="blog-read-more" href="blog.html?post=' + p.id + '">Read More →</a>' +
+            '</div>' +
+          '</article>';
+        }).join('');
       }
 
-      var posts = [];
-      try { posts = JSON.parse(localStorage.getItem('sqc_blogs_v2') || '[]'); } catch(e) { posts = DEFAULT_BLOGS; }
-      if (!posts.length) posts = DEFAULT_BLOGS;
-
-      var grid = document.getElementById('blog-grid');
-      grid.innerHTML = posts.map(function(p) {
-        return '<article class="blog-card">' +
-          '<div class="blog-thumb" style="background:' + p.thumbBg + '">' + p.thumbEmoji + '</div>' +
-          '<div class="blog-body">' +
-            '<div class="blog-meta">' +
-              '<span class="blog-tag">' + p.tag + '</span>' +
-              '<span class="blog-date">' + p.date + '</span>' +
-            '</div>' +
-            '<h3 class="blog-title">' + p.title + '</h3>' +
-            '<p class="blog-excerpt">' + p.excerpt + '</p>' +
-            '<a class="blog-read-more" href="blog.html?post=' + p.id + '">Read More →</a>' +
-          '</div>' +
-        '</article>';
-      }).join('');
+      if (window.sqc) {
+        loadBlogPreview();
+      } else {
+        window.addEventListener('sqc:ready', loadBlogPreview, { once: true });
+      }
     })();
   </script>
 
