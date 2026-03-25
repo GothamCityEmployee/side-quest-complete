@@ -385,10 +385,20 @@
       <div class="form-group">
         <label>Condition</label>
         <select id="f-cond">
-          <option>Mint</option>
-          <option>Excellent</option>
-          <option>Good</option>
-          <option>Fair</option>
+          <optgroup label="General">
+            <option>Mint</option>
+            <option>Near Mint</option>
+            <option>Good</option>
+            <option>Fair</option>
+            <option>Poor</option>
+          </optgroup>
+          <optgroup label="Cards &amp; Comics (1–10 scale)">
+            <option value="9-10 (Mint)">9–10 · Mint</option>
+            <option value="7-8 (Near Mint)">7–8 · Near Mint</option>
+            <option value="5-6 (Good)">5–6 · Good</option>
+            <option value="3-4 (Fair)">3–4 · Fair</option>
+            <option value="1-2 (Poor)">1–2 · Poor</option>
+          </optgroup>
         </select>
       </div>
     </div>
@@ -669,7 +679,7 @@
     document.getElementById('modal-title').textContent = p ? '✏️ Edit Product' : '+ Add Product';
     document.getElementById('f-name').value    = p?.name || '';
     document.getElementById('f-cat').value     = p?.category || 'Toys';
-    document.getElementById('f-cond').value    = p?.condition || 'Excellent';
+    document.getElementById('f-cond').value    = p?.condition || 'Good';
     document.getElementById('f-cost').value    = p?.cost || '';
     document.getElementById('f-price').value   = p?.price || '';
     document.getElementById('f-desc').value    = p?.description || '';
