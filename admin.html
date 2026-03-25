@@ -556,18 +556,18 @@
     editingId = p ? p.id : null;
     document.getElementById('modal-title').textContent = p ? '✏️ Edit Product' : '+ Add Product';
     document.getElementById('f-name').value    = p?.name || '';
-    document.getElementById('f-cat').value     = p?.category || 'G.I. Joe';
+    document.getElementById('f-cat').value     = p?.category || 'Toys';
     document.getElementById('f-cond').value    = p?.condition || 'Excellent';
-    document.getElementById('f-console').value = p?.console || '';
     document.getElementById('f-cost').value    = p?.cost || '';
     document.getElementById('f-price').value   = p?.price || '';
     document.getElementById('f-desc').value    = p?.description || '';
     document.getElementById('f-img').value     = p?.image || '';
-    document.getElementById('f-img-file').value = '';
-    if (p?.image) showImgPreview(p.image); else document.getElementById('f-img-preview').style.display = 'none';
+    const imgFile = document.getElementById('f-img-file');
+    if (imgFile) imgFile.value = '';
+    const imgPreview = document.getElementById('f-img-preview');
+    if (imgPreview) { if (p?.image) showImgPreview(p.image); else imgPreview.style.display = 'none'; }
     document.getElementById('f-stock').checked   = p ? !!p.inStock : true;
     document.getElementById('f-featured').checked = p ? !!p.featured : false;
-    toggleConsole();
     calcProfit();
     document.getElementById('modal').classList.add('open');
   }
@@ -609,11 +609,6 @@
     preview.style.display = 'block';
   }
 
-  function toggleConsole() {
-    const isGames = document.getElementById('f-cat').value === 'Video Games';
-    document.getElementById('console-row').style.display = isGames ? 'block' : 'none';
-  }
-
   function calcProfit() {
     const cost  = parseFloat(document.getElementById('f-cost').value)  || 0;
     const price = parseFloat(document.getElementById('f-price').value) || 0;
@@ -636,7 +631,7 @@
       category,
       category_slug: catSlug,
       condition:     document.getElementById('f-cond').value,
-      console:       category === 'Video Games' ? document.getElementById('f-console').value : null,
+      console:       null,
       cost_price:    cost,
       price,
       description:   document.getElementById('f-desc').value.trim(),
