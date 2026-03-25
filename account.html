@@ -807,21 +807,36 @@
 
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
-  <script src="products.js"></script>
-  <script src="wishlist.js"></script>
-  <script src="orders.js"></script>
   <script>
-    (async function () {
-      // ── Auth guard ─────────────────────────────────────────────────────────
+    // ── Tier logic ─────────────────────────────────────────────────────────────
+    function getTier(points) {
+      if (points >= 1000) return { name: "Platinum", color: "#b03af5", min: 1000, next: null,     nextPoints: null, discount: 0.15 };
+      if (points >= 500)  return { name: "Gold",     color: "#ffd700", min: 500,  next: "Platinum", nextPoints: 1000, discount: 0.10 };
+      if (points >= 100)  return { name: "Silver",   color: "#c0c0c0", min: 100,  next: "Gold",     nextPoints: 500,  discount: 0.05 };
+      return                     { name: "Bronze",   color: "#cd7f32", min: 0,    next: "Silver",   nextPoints: 100,  discount: 0 };
+    }
+
+    async function init() {
+      // ── Auth guard ───────────────────────────────────────────────────────────
       const loggedIn = await SQCAuth.isLoggedIn();
       if (!loggedIn) {
         location.replace('login.html?redirect=account.html');
         return;
       }
 
-      let user = await SQCAuth.getUser();
+      // ── Load user + profile ──────────────────────────────────────────────────
+      const authUser = await SQCAuth.getUser();
+      const profile  = await SQCAuth.getProfile(authUser.id);
 
-      // ── Section navigation ─────────────────────────────────────────────────
+      let user = {
+        id:        authUser.id,
+        email:     authUser.email,
+        name:      profile?.name || authUser.user_metadata?.name || 'Player',
+        points:    profile?.points || 0,
+        createdAt: authUser.created_at,
+      };
+
+      // ── Section navigation ───────────────────────────────────────────────────
       function showSection(name) {
         document.querySelectorAll('.account-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.sidebar-nav a').forEach(a => {
@@ -830,13 +845,11 @@
         const el = document.getElementById('section-' + name);
         if (el) el.classList.add('active');
 
-        // Lazy-render sections
-        if (name === 'orders') renderOrders();
+        if (name === 'orders')   renderOrders();
         if (name === 'wishlist') renderWishlist();
-        if (name === 'points') renderPoints();
-        if (name === 'profile') renderProfile();
+        if (name === 'points')   renderPoints();
+        if (name === 'profile')  renderProfile();
 
-        // Update URL hash silently
         history.replaceState(null, '', '#' + name);
       }
 
@@ -847,35 +860,35 @@
         });
       });
 
-      // ── Logout ─────────────────────────────────────────────────────────────
-      document.getElementById('btn-logout').addEventListener('click', () => {
-        SQCAuth.logout();
+      // ── Logout ───────────────────────────────────────────────────────────────
+      document.getElementById('btn-logout').addEventListener('click', async () => {
+        await SQCAuth.logout();
         location.replace('index.html');
       });
 
-      // ── Sidebar fill ───────────────────────────────────────────────────────
+      // ── Sidebar fill ─────────────────────────────────────────────────────────
       function fillSidebar() {
         const initials = user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
         document.getElementById('sidebar-avatar').textContent = initials;
-        document.getElementById('sidebar-name').textContent = user.name;
+        document.getElementById('sidebar-name').textContent  = user.name;
         document.getElementById('sidebar-email').textContent = user.email;
 
-        const tier = SQCAuth.getTier(user.points);
+        const tier   = getTier(user.points);
         const tierEl = document.getElementById('sidebar-tier');
-        tierEl.textContent = tier.name;
-        tierEl.style.color = tier.color;
+        tierEl.textContent       = tier.name;
+        tierEl.style.color       = tier.color;
         tierEl.style.borderColor = tier.color;
         tierEl.style.backgroundColor = tier.color + '18';
       }
 
-      // ── Profile ────────────────────────────────────────────────────────────
+      // ── Profile ──────────────────────────────────────────────────────────────
       function renderProfile() {
-        document.getElementById('profile-name-val').textContent = user.name;
+        document.getElementById('profile-name-val').textContent  = user.name;
         document.getElementById('profile-email-val').textContent = user.email;
         const since = new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         document.getElementById('profile-since-val').textContent = since;
 
-        const tier = SQCAuth.getTier(user.points);
+        const tier   = getTier(user.points);
         const tierEl = document.getElementById('profile-tier-val');
         tierEl.textContent = tier.name + (tier.discount > 0 ? ` (${Math.round(tier.discount * 100)}% discount applied)` : '');
         tierEl.style.color = tier.color;
@@ -884,89 +897,112 @@
       // Edit name
       document.getElementById('btn-edit-name').addEventListener('click', () => {
         document.getElementById('name-display-wrap').style.display = 'none';
-        document.getElementById('name-edit-wrap').style.display = 'flex';
+        document.getElementById('name-edit-wrap').style.display    = 'flex';
         document.getElementById('edit-name-input').value = user.name;
         document.getElementById('edit-name-input').focus();
       });
 
       function cancelEditName() {
         document.getElementById('name-display-wrap').style.display = 'flex';
-        document.getElementById('name-edit-wrap').style.display = 'none';
+        document.getElementById('name-edit-wrap').style.display    = 'none';
         document.getElementById('edit-name-err').textContent = '';
       }
 
       document.getElementById('btn-cancel-name').addEventListener('click', cancelEditName);
 
-      document.getElementById('btn-save-name').addEventListener('click', () => {
-        const val = document.getElementById('edit-name-input').value.trim();
+      document.getElementById('btn-save-name').addEventListener('click', async () => {
+        const val   = document.getElementById('edit-name-input').value.trim();
         const errEl = document.getElementById('edit-name-err');
-        if (!val) { errEl.textContent = 'Name cannot be empty.'; errEl.className = 'field-error visible'; return; }
+        if (!val) {
+          errEl.textContent = 'Name cannot be empty.';
+          errEl.className   = 'field-error visible';
+          return;
+        }
         errEl.textContent = '';
-        errEl.className = 'field-error';
-        SQCAuth.updateUser(user.id, { name: val });
-        user = SQCAuth.getCurrentUser();
+        errEl.className   = 'field-error';
+
+        const { error } = await window.sqc
+          .from('profiles')
+          .update({ name: val })
+          .eq('id', user.id);
+
+        if (error) {
+          errEl.textContent = 'Failed to save. Please try again.';
+          errEl.className   = 'field-error visible';
+          return;
+        }
+
+        user.name = val;
         cancelEditName();
         renderProfile();
         fillSidebar();
       });
 
-      // ── Points ─────────────────────────────────────────────────────────────
+      // ── Points ───────────────────────────────────────────────────────────────
       function renderPoints() {
-        const tier = SQCAuth.getTier(user.points);
+        const tier = getTier(user.points);
         document.getElementById('points-total').textContent = user.points.toLocaleString();
 
         const badge = document.getElementById('points-tier-badge');
-        badge.textContent = '⭐ ' + tier.name;
-        badge.style.color = tier.color;
-        badge.style.borderColor = tier.color;
-        badge.style.backgroundColor = tier.color + '18';
+        badge.textContent            = '⭐ ' + tier.name;
+        badge.style.color            = tier.color;
+        badge.style.borderColor      = tier.color;
+        badge.style.backgroundColor  = tier.color + '18';
 
-        // Highlight current tier card
         ['bronze', 'silver', 'gold', 'platinum'].forEach(t => {
           document.getElementById('tier-' + t).classList.toggle('current', t === tier.name.toLowerCase());
         });
 
-        // Progress bar
         const progressSection = document.getElementById('progress-section');
         if (tier.nextPoints) {
           progressSection.style.display = '';
-          const pct = Math.min(100, Math.round((user.points - tier.min) / (tier.nextPoints - tier.min) * 100));
+          const pct  = Math.min(100, Math.round((user.points - tier.min) / (tier.nextPoints - tier.min) * 100));
           const fill = document.getElementById('progress-fill');
-          fill.style.width = pct + '%';
+          fill.style.width      = pct + '%';
           fill.style.background = tier.color;
 
           const needed = tier.nextPoints - user.points;
-          document.getElementById('progress-label-left').textContent = tier.name + ' → ' + tier.next;
+          document.getElementById('progress-label-left').textContent  = tier.name + ' → ' + tier.next;
           document.getElementById('progress-label-right').textContent = needed + ' points to ' + tier.next;
         } else {
           progressSection.style.display = 'none';
         }
 
-        // Discount callout
-        const pctDisplay = document.getElementById('discount-pct-display');
+        const pctDisplay  = document.getElementById('discount-pct-display');
         const descDisplay = document.getElementById('discount-desc-display');
-        const callout = document.getElementById('discount-callout');
+        const callout     = document.getElementById('discount-callout');
 
         if (tier.discount > 0) {
           const pct = Math.round(tier.discount * 100);
-          pctDisplay.textContent = pct + '% OFF';
-          pctDisplay.className = 'discount-pct';
+          pctDisplay.textContent  = pct + '% OFF';
+          pctDisplay.className    = 'discount-pct';
           descDisplay.textContent = `Your ${tier.name} tier discount is automatically applied at checkout.`;
-          callout.className = 'discount-callout';
+          callout.className       = 'discount-callout';
         } else {
-          pctDisplay.textContent = '0%';
-          pctDisplay.className = 'discount-pct zero';
+          pctDisplay.textContent  = '0%';
+          pctDisplay.className    = 'discount-pct zero';
           descDisplay.textContent = 'Reach Silver tier (100 points) to unlock your first discount!';
-          callout.className = 'discount-callout zero';
+          callout.className       = 'discount-callout zero';
         }
       }
 
-      // ── Orders ─────────────────────────────────────────────────────────────
-      function renderOrders() {
-        const orders = SQCOrders.getOrders(user.id);
+      // ── Orders ───────────────────────────────────────────────────────────────
+      async function renderOrders() {
         const container = document.getElementById('orders-content');
+        container.innerHTML = '<p style="color:#666;text-align:center;padding:40px 0">Loading orders…</p>';
 
-        if (!orders.length) {
+        const { data: orders, error } = await window.sqc
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          container.innerHTML = '<p style="color:#ff5555;text-align:center;padding:40px 0">Failed to load orders.</p>';
+          return;
+        }
+
+        if (!orders || !orders.length) {
           container.innerHTML = `
             <div class="orders-empty">
               <div class="empty-icon">🗺️</div>
@@ -993,35 +1029,39 @@
             <tbody>`;
 
         orders.forEach((order, i) => {
-          const date = new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          const itemSummary = order.items.length === 1
-            ? order.items[0].name
-            : order.items[0].name + ' + ' + (order.items.length - 1) + ' more';
-          const statusClass = (order.status || 'Processing').toLowerCase().replace(' ', '');
+          const items       = Array.isArray(order.items) ? order.items : [];
+          const date        = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const itemSummary = items.length === 0
+            ? '—'
+            : items.length === 1
+              ? (items[0].name || 'Item')
+              : (items[0].name || 'Item') + ' + ' + (items.length - 1) + ' more';
+          const status      = order.status || 'Processing';
+          const statusClass = status.toLowerCase().replace(/\s+/g, '');
 
           html += `
             <tr>
-              <td><span class="order-id">${order.id}</span></td>
+              <td><span class="order-id">#${String(order.id).slice(0, 8).toUpperCase()}</span></td>
               <td>${date}</td>
               <td>${itemSummary}</td>
-              <td>$${order.total.toFixed(2)}</td>
-              <td style="color:var(--neon)">+${order.pointsEarned}</td>
-              <td><span class="order-status ${statusClass}">${order.status}</span></td>
+              <td>$${Number(order.total || 0).toFixed(2)}</td>
+              <td style="color:var(--neon)">+${order.points_earned || 0}</td>
+              <td><span class="order-status ${statusClass}">${status}</span></td>
               <td><button class="order-expand-btn" data-order="${i}">View ▾</button></td>
             </tr>
             <tr class="order-detail-row" id="order-detail-${i}">
               <td colspan="7">
                 <div class="order-item-list">
-                  ${order.items.map(item => `
+                  ${items.map(item => `
                     <div class="order-item">
                       ${item.image
-                        ? `<img src="${item.image}" alt="${item.name}" class="order-item-img" loading="lazy" />`
+                        ? `<img src="${item.image}" alt="${item.name || ''}" class="order-item-img" loading="lazy" />`
                         : `<div class="order-item-emoji">${item.emoji || '🎮'}</div>`}
                       <div class="order-item-info">
-                        <div class="order-item-name">${item.name}</div>
-                        <div class="order-item-meta">Qty: ${item.qty}</div>
+                        <div class="order-item-name">${item.name || 'Item'}</div>
+                        <div class="order-item-meta">Qty: ${item.qty || 1}</div>
                       </div>
-                      <div class="order-item-price">$${(item.price * item.qty).toFixed(2)}</div>
+                      <div class="order-item-price">$${((item.price || 0) * (item.qty || 1)).toFixed(2)}</div>
                     </div>`).join('')}
                 </div>
               </td>
@@ -1033,18 +1073,23 @@
 
         container.querySelectorAll('.order-expand-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const idx = btn.dataset.order;
-            const row = document.getElementById('order-detail-' + idx);
+            const idx  = btn.dataset.order;
+            const row  = document.getElementById('order-detail-' + idx);
             const open = row.classList.toggle('open');
             btn.textContent = open ? 'Hide ▴' : 'View ▾';
           });
         });
       }
 
-      // ── Wishlist ───────────────────────────────────────────────────────────
-      function renderWishlist() {
-        const ids = SQCWishlist.getWishlist();
+      // ── Wishlist ─────────────────────────────────────────────────────────────
+      async function renderWishlist() {
         const container = document.getElementById('wishlist-content');
+        let ids;
+        try {
+          ids = JSON.parse(localStorage.getItem('sqc-wishlist') || '[]');
+        } catch (e) {
+          ids = [];
+        }
 
         if (!ids.length) {
           container.innerHTML = `
@@ -1057,9 +1102,14 @@
           return;
         }
 
-        const wishlistProducts = (typeof products !== 'undefined' ? products : []).filter(p => ids.includes(p.id));
+        container.innerHTML = '<p style="color:#666;text-align:center;padding:40px 0">Loading wishlist…</p>';
 
-        if (!wishlistProducts.length) {
+        const { data: wishlistProducts, error } = await window.sqc
+          .from('products')
+          .select('*')
+          .in('id', ids);
+
+        if (error || !wishlistProducts || !wishlistProducts.length) {
           container.innerHTML = `<p style="color:#666;text-align:center;padding:40px 0">Wishlisted products are no longer available.</p>`;
           return;
         }
@@ -1073,7 +1123,7 @@
                   : `<div class="wishlist-img-placeholder" style="${p.bg || 'background:#222'}">${p.emoji || '🎮'}</div>`}
                 <div class="wishlist-info">
                   <div class="wishlist-name">${p.name}</div>
-                  <div class="wishlist-price">$${p.price.toFixed(2)}</div>
+                  <div class="wishlist-price">$${Number(p.price || 0).toFixed(2)}</div>
                   <div class="wishlist-actions">
                     <button class="wishlist-add-cart" data-id="${p.id}">Add to Cart</button>
                     <button class="wishlist-remove" data-id="${p.id}" aria-label="Remove from wishlist">✕</button>
@@ -1084,27 +1134,30 @@
 
         container.querySelectorAll('.wishlist-remove').forEach(btn => {
           btn.addEventListener('click', () => {
-            SQCWishlist.removeFromWishlist(parseInt(btn.dataset.id));
+            const pid = btn.dataset.id;
+            try {
+              const current = JSON.parse(localStorage.getItem('sqc-wishlist') || '[]');
+              localStorage.setItem('sqc-wishlist', JSON.stringify(current.filter(id => String(id) !== String(pid))));
+            } catch (e) {}
             renderWishlist();
           });
         });
 
         container.querySelectorAll('.wishlist-add-cart').forEach(btn => {
           btn.addEventListener('click', () => {
-            // Add to cart via localStorage (same format as main.js)
-            const pid = parseInt(btn.dataset.id);
-            const product = (typeof products !== 'undefined' ? products : []).find(p => p.id === pid);
+            const pid     = btn.dataset.id;
+            const product = wishlistProducts.find(p => String(p.id) === String(pid));
             if (!product) return;
             try {
-              const cart = JSON.parse(localStorage.getItem('sqc-cart') || '[]');
-              const existing = cart.find(i => i.id === pid);
+              const cart     = JSON.parse(localStorage.getItem('sqc-cart') || '[]');
+              const existing = cart.find(i => String(i.id) === String(pid));
               if (existing) {
                 existing.qty = (existing.qty || 1) + 1;
               } else {
                 cart.push({ ...product, qty: 1 });
               }
               localStorage.setItem('sqc-cart', JSON.stringify(cart));
-              btn.textContent = 'Added! ✓';
+              btn.textContent   = 'Added! ✓';
               btn.style.opacity = '0.6';
               setTimeout(() => { btn.textContent = 'Add to Cart'; btn.style.opacity = ''; }, 1500);
             } catch (e) {
@@ -1114,12 +1167,11 @@
         });
       }
 
-      // ── Init ───────────────────────────────────────────────────────────────
+      // ── Init ─────────────────────────────────────────────────────────────────
       fillSidebar();
       renderProfile();
 
-      // Route by hash
-      const hash = location.hash.slice(1);
+      const hash          = location.hash.slice(1);
       const validSections = ['profile', 'points', 'orders', 'wishlist'];
       if (validSections.includes(hash)) {
         showSection(hash);
@@ -1129,12 +1181,15 @@
       const menuToggle = document.getElementById('menu-toggle');
       if (menuToggle) {
         menuToggle.addEventListener('click', () => {
-          const nav = document.getElementById('nav-links');
+          const nav  = document.getElementById('nav-links');
           const open = nav.classList.toggle('open');
           menuToggle.setAttribute('aria-expanded', String(open));
         });
       }
-    })();
+    }
+
+    if (window.sqc) { init(); }
+    else { window.addEventListener('sqc:ready', init, { once: true }); }
   </script>
 </body>
 </html>
