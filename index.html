@@ -305,6 +305,15 @@
       // Default blog posts — pre-populate localStorage on first load
       var DEFAULT_BLOGS = [
         {
+          id: 4,
+          title: "Retro Video Games Are Making a Huge Comeback",
+          tag: "Retro Gaming",
+          date: "March 25, 2026",
+          excerpt: "Retro games are hotter than ever. From old Nintendo cartridges to PS2 classics, here's why everyone is going back — and what's actually worth hunting for.",
+          thumbEmoji: "🕹️",
+          thumbBg: "linear-gradient(135deg, #2c3e50, #4ca1af)"
+        },
+        {
           id: 1,
           title: "Top 10 N64 Games You Totally Forgot Existed",
           tag: "Retro Gaming",
@@ -334,12 +343,12 @@
       ];
 
       // Pre-populate localStorage with defaults if not yet set
-      if (!localStorage.getItem('sqc_blogs')) {
-        localStorage.setItem('sqc_blogs', JSON.stringify(DEFAULT_BLOGS));
+      if (!localStorage.getItem('sqc_blogs_v2')) {
+        localStorage.setItem('sqc_blogs_v2', JSON.stringify(DEFAULT_BLOGS));
       }
 
       var posts = [];
-      try { posts = JSON.parse(localStorage.getItem('sqc_blogs') || '[]'); } catch(e) { posts = DEFAULT_BLOGS; }
+      try { posts = JSON.parse(localStorage.getItem('sqc_blogs_v2') || '[]'); } catch(e) { posts = DEFAULT_BLOGS; }
       if (!posts.length) posts = DEFAULT_BLOGS;
 
       var grid = document.getElementById('blog-grid');
