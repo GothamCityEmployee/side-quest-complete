@@ -108,7 +108,7 @@
         <li><a href="#shop">Shop</a></li>
         <li><a href="#categories">Browse</a></li>
         <li><a href="#about">About</a></li>
-        <li><a href="#blog">Blog</a></li>
+        <li><a href="blog.html">Blog</a></li>
         <li><a href="#contact">Contact</a></li>
         <li><a href="account.html" aria-label="Wishlist">❤️</a></li>
         <li id="nav-user-li"><a href="login.html" id="nav-user-link">👤 Login</a></li>
@@ -353,7 +353,7 @@
             '</div>' +
             '<h3 class="blog-title">' + p.title + '</h3>' +
             '<p class="blog-excerpt">' + p.excerpt + '</p>' +
-            '<span class="blog-read-more">Read More →</span>' +
+            '<a class="blog-read-more" href="blog.html?post=' + p.id + '">Read More →</a>' +
           '</div>' +
         '</article>';
       }).join('');
@@ -403,7 +403,7 @@
           <h4>Info</h4>
           <ul>
             <li><a href="#about">About Us</a></li>
-            <li><a href="#blog">Blog</a></li>
+            <li><a href="blog.html">Blog</a></li>
             <li><a href="#contact">Contact</a></li>
             <li><a href="#">Shipping Policy</a></li>
             <li><a href="#">Returns</a></li>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog — Side Quest Complete</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { min-height: 100vh; }
+
+    .blog-page {
+      padding: 100px 0 80px;
+    }
+
+    /* ── Post list view ── */
+    .blog-hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    /* ── Single post view ── */
+    #post-view { display: none; }
+    #list-view  { display: block; }
+
+    .post-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-purple);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 32px;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: opacity .2s;
+    }
+    .post-back:hover { opacity: .75; }
+
+    .post-wrap {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .post-thumb {
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      margin-bottom: 32px;
+    }
+
+    .post-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .post-tag {
+      background: rgba(176,58,245,.15);
+      color: var(--color-purple);
+      border: 1px solid rgba(176,58,245,.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .post-date {
+      color: var(--gray-600);
+      font-size: 0.8rem;
+    }
+
+    .post-title {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.75rem, 2.5vw, 1.1rem);
+      color: white;
+      line-height: 1.8;
+      margin-bottom: 24px;
+    }
+
+    .post-body {
+      color: #ccc;
+      font-size: 1rem;
+      line-height: 1.85;
+    }
+
+    .post-body p {
+      margin-bottom: 20px;
+    }
+
+    .post-body h2 {
+      font-family: var(--font-pixel);
+      font-size: 0.75rem;
+      color: var(--neon);
+      margin: 32px 0 16px;
+      line-height: 1.6;
+    }
+
+    .post-body ul {
+      list-style: disc;
+      padding-left: 24px;
+      margin-bottom: 20px;
+    }
+
+    .post-body ul li {
+      margin-bottom: 10px;
+    }
+
+    .post-body strong { color: white; }
+
+    .post-divider {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 40px 0;
+    }
+
+    .more-posts-title {
+      font-family: var(--font-pixel);
+      font-size: 0.65rem;
+      color: var(--muted, #888);
+      margin-bottom: 24px;
+      letter-spacing: .05em;
+    }
+
+    /* ── Empty state ── */
+    .blog-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="site-header" role="banner">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="index.html" class="nav-logo" aria-label="Side Quest Complete — Home">
+        <img src="../logos/IMG_0216_Original.PNG" alt="Side Quest Complete logo" width="40" height="40" />
+        <span class="nav-logo-text">Side Quest<br>Complete</span>
+      </a>
+      <ul class="nav-links" id="nav-links" role="list">
+        <li><a href="index.html#shop">Shop</a></li>
+        <li><a href="index.html#categories">Browse</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="blog.html" class="active">Blog</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+      <div class="nav-right">
+        <a href="checkout.html" style="color:#aaa;font-size:0.8rem;text-decoration:none;margin-right:12px;">🛒 Cart</a>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="blog-page">
+    <div class="container">
+
+      <!-- ── LIST VIEW ── -->
+      <div id="list-view">
+        <div class="blog-hero">
+          <h1 class="section-title">From the Vault</h1>
+          <p class="section-sub">Retro gaming thoughts, finds, and lore.</p>
+        </div>
+        <div class="blog-grid" id="blog-list"></div>
+      </div>
+
+      <!-- ── SINGLE POST VIEW ── -->
+      <div id="post-view">
+        <div class="post-wrap">
+          <button class="post-back" onclick="showList()">← Back to Blog</button>
+          <div class="post-thumb" id="post-thumb"></div>
+          <div class="post-meta-row">
+            <span class="post-tag" id="post-tag"></span>
+            <span class="post-date" id="post-date"></span>
+          </div>
+          <h1 class="post-title" id="post-title"></h1>
+          <div class="post-body" id="post-body"></div>
+          <hr class="post-divider" />
+          <p class="more-posts-title">MORE FROM THE VAULT</p>
+          <div class="blog-grid" id="more-posts"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+  (function() {
+    // ── Default posts with full content ──────────────────────────────────────
+    var DEFAULT_BLOGS = [
+      {
+        id: 1,
+        title: "Top 10 N64 Games You Totally Forgot Existed",
+        tag: "Retro Gaming",
+        date: "Mar 10, 2025",
+        excerpt: "Everyone knows Ocarina of Time and Mario 64. But the N64 library runs deep — and some of its weirdest, most underrated gems are sitting in bins right now for next to nothing.",
+        thumbEmoji: "🎮",
+        thumbBg: "linear-gradient(135deg, #0d1b2a, #1b263b)",
+        content: "<p>Everyone knows <strong>Ocarina of Time</strong>. Everyone knows <strong>Mario 64</strong>. Those are the Mount Rushmores of N64 gaming — they're not going anywhere. But the N64 library is massive, and hiding underneath the classics is a graveyard of weird, wonderful, and criminally underrated games that most people completely forgot existed.</p><p>We dig through bins of this stuff every week. Here are 10 games that always make us stop and smile.</p><h2>1. Mischief Makers (1997)</h2><p>A side-scrolling action platformer from Treasure where you shake everything in sight. Bizarre, fast, and genuinely fun. Almost nobody talks about it.</p><h2>2. Space Station Silicon Valley (1998)</h2><p>You play as a microchip possessing robot animals on a rogue space station. That sentence alone should be enough. DMA Design (the people who later made GTA) made this.</p><h2>3. Mystical Ninja Starring Goemon (1998)</h2><p>Giant mech battles. Musical numbers. Japanese folklore. A robot cat named Yae. This game is completely unhinged and we love it.</p><h2>4. Blast Corps (1997)</h2><p>Rare at their most creative. You drive demolition vehicles to clear a path for a runaway nuclear missile carrier. Every level is a puzzle. Criminally overlooked.</p><h2>5. Body Harvest (1998)</h2><p>An open-world alien invasion game that came out before open-world games were a thing. Rough around the edges but ahead of its time in every way.</p><h2>6. Ogre Battle 64 (1999)</h2><p>One of the deepest strategy RPGs ever made on any platform. It came out late in the N64's life cycle and barely anyone played it. Cartridges go for real money now.</p><h2>7. Buck Bumble (1998)</h2><p>You're a cybernetic bee defending Earth. The soundtrack goes absolutely hard. No further questions.</p><h2>8. Beetle Adventure Racing (1999)</h2><p>EA made a racing game starring VW Beetles with hidden shortcuts, secret areas, and genuinely excellent track design. Better than most racing games of the era.</p><h2>9. Hybrid Heaven (1999)</h2><p>Part RPG, part wrestling game, all weird. Set in a secret underground city beneath New York. This one slips through the cracks every time.</p><h2>10. Snowboard Kids (1997)</h2><p>Mario Kart but on snowboards with a bonkers sense of humor. The sequel is even better. Both are worth owning.</p><p>We usually have a handful of these in stock at any given time. Stop in and dig through the bins — you never know what you'll find.</p>"
+      },
+      {
+        id: 2,
+        title: "Why the Original Game Boy Still Slaps in 2025",
+        tag: "Hardware",
+        date: "Feb 22, 2025",
+        excerpt: "No backlight. Four shades of greenish gray. A battery life measured in AA count. And yet — the original DMG-01 Game Boy remains one of the most satisfying gaming experiences ever made.",
+        thumbEmoji: "👾",
+        thumbBg: "linear-gradient(135deg, #1a472a, #40916c)",
+        content: "<p>The original <strong>Game Boy</strong> — the DMG-01, the gray brick, the tank — came out in 1989. It had a reflective LCD screen, four shades of green-gray, no backlight, and ran on four AA batteries. By any modern measure, it should be unplayable.</p><p>It isn't.</p><h2>Why it still works</h2><p>There's something about the Game Boy's constraints that forces good game design. You can't hide bad gameplay behind flashy graphics when your screen looks like a murky fishbowl. The games that held up — <strong>Tetris, Link's Awakening, Kirby's Dream Land, Metroid II</strong> — held up because they were actually good, not because they looked impressive.</p><h2>The feel</h2><p>The buttons on an original DMG have a tactile quality that modern handhelds don't match. The D-pad is stiff in the right way. The A and B buttons have real travel. When you press something, you feel it. There's no ambiguity.</p><h2>The culture</h2><p>The Game Boy was the first console millions of people owned personally — not the family console in the living room, but <em>yours</em>, in your backpack, on the bus. That kind of emotional attachment doesn't fade. It compounds.</p><h2>What to look for</h2><p>If you're buying an original Game Boy, check the screen for vertical lines (a common issue as the ribbon cable ages), test all the buttons, and make sure the battery contacts aren't corroded. A clean DMG in good working order is still totally worth owning.</p><p>We stock them when we find them. Come in and check.</p>"
+      },
+      {
+        id: 3,
+        title: "How to Spot a Fake Pokémon Card (Without Destroying It)",
+        tag: "Collecting",
+        date: "Jan 15, 2025",
+        excerpt: "The counterfeit Pokémon card market has gotten scarily good. But there are still telltale signs that separate originals from fakes. Our guide for collectors.",
+        thumbEmoji: "✨",
+        thumbBg: "linear-gradient(135deg, #f6d365, #fda085)",
+        content: "<p>The Pokémon card market exploded during COVID and never really came back down. Where there's money, there are fakes — and the counterfeit card market has gotten genuinely scary good over the last few years. But there are still reliable ways to tell real from fake without damaging the card.</p><h2>The Light Test</h2><p>Hold the card up to a light source and look through it. <strong>Real cards have a black layer in the middle</strong> — you'll see two lighter layers sandwiching a dark core. Fakes often lack this or have it in the wrong proportion. This is the fastest and most reliable test.</p><h2>The Feel Test</h2><p>Real Pokémon cards have a very specific texture and flex. They're not flimsy, but they have a controlled give when you gently bend them. Fakes are often either too stiff or too flimsy. Real cards also have a slightly rough texture on the back from the printing process.</p><h2>Print Quality</h2><p>Look at the card under good lighting or a magnifying glass. <strong>Real cards use a rosette printing pattern</strong> — tiny dots arranged in circular clusters. Fakes usually show a flat, continuous inkjet-style pattern with no dot structure. The text on fakes is also often slightly blurry or off-weight.</p><h2>The Font</h2><p>Pokémon cards use very specific fonts with tight tolerances. On fakes, the HP number is often slightly wrong — wrong font weight, wrong spacing, or slightly off-center. The copyright text at the bottom is another good check: on fakes it's often too small, too large, or missing entirely.</p><h2>The Smell Test (Yes, Really)</h2><p>Real cards have a very faint, specific smell from the printing ink and cardstock. Fakes often smell noticeably different — sometimes chemical, sometimes like inkjet paper. This sounds ridiculous but experienced collectors swear by it.</p><h2>Energy Symbols and Holofoil</h2><p>On holo cards, the foil pattern on real cards has a very specific texture — it catches light in a particular way and has depth to it. Fake holos often look flat, overly shiny, or have the pattern printed on rather than embedded in the card.</p><p>When in doubt, compare side by side with a card you know is real. We're happy to help authenticate cards in store — bring them in.</p>"
+      }
+    ];
+
+    if (!localStorage.getItem('sqc_blogs')) {
+      localStorage.setItem('sqc_blogs', JSON.stringify(DEFAULT_BLOGS));
+    }
+
+    var posts = [];
+    try { posts = JSON.parse(localStorage.getItem('sqc_blogs') || '[]'); } catch(e) { posts = DEFAULT_BLOGS; }
+    if (!posts.length) posts = DEFAULT_BLOGS;
+
+    // ── Render a card ─────────────────────────────────────────────────────────
+    function blogCard(p, onclick) {
+      return '<article class="blog-card" style="cursor:pointer" onclick="' + onclick + '">' +
+        '<div class="blog-thumb" style="background:' + p.thumbBg + '">' + p.thumbEmoji + '</div>' +
+        '<div class="blog-body">' +
+          '<div class="blog-meta">' +
+            '<span class="blog-tag">' + p.tag + '</span>' +
+            '<span class="blog-date">' + p.date + '</span>' +
+          '</div>' +
+          '<h3 class="blog-title">' + p.title + '</h3>' +
+          '<p class="blog-excerpt">' + p.excerpt + '</p>' +
+          '<span class="blog-read-more">Read More →</span>' +
+        '</div>' +
+      '</article>';
+    }
+
+    // ── List view ─────────────────────────────────────────────────────────────
+    function showList() {
+      document.getElementById('list-view').style.display = 'block';
+      document.getElementById('post-view').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      history.replaceState(null, '', 'blog.html');
+    }
+    window.showList = showList;
+
+    function renderList() {
+      var grid = document.getElementById('blog-list');
+      if (!posts.length) {
+        grid.innerHTML = '<div class="blog-empty"><p>No posts yet. Check back soon!</p></div>';
+        return;
+      }
+      grid.innerHTML = posts.map(function(p) {
+        return blogCard(p, 'showPost(' + p.id + ')');
+      }).join('');
+    }
+
+    // ── Single post view ──────────────────────────────────────────────────────
+    function showPost(id) {
+      var p = posts.find(function(x) { return x.id === id; });
+      if (!p) return;
+
+      document.getElementById('post-thumb').style.background = p.thumbBg;
+      document.getElementById('post-thumb').textContent = p.thumbEmoji;
+      document.getElementById('post-tag').textContent = p.tag;
+      document.getElementById('post-date').textContent = p.date;
+      document.getElementById('post-title').textContent = p.title;
+      document.getElementById('post-body').innerHTML = p.content ||
+        '<p>' + p.excerpt + '</p><p style="color:#555;font-style:italic">Full article coming soon.</p>';
+
+      // More posts (exclude current)
+      var others = posts.filter(function(x) { return x.id !== id; }).slice(0, 2);
+      document.getElementById('more-posts').innerHTML = others.map(function(x) {
+        return blogCard(x, 'showPost(' + x.id + ')');
+      }).join('');
+
+      document.getElementById('list-view').style.display = 'none';
+      document.getElementById('post-view').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      history.replaceState(null, '', 'blog.html?post=' + id);
+    }
+    window.showPost = showPost;
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    renderList();
+
+    // Check if URL has ?post=X
+    var params = new URLSearchParams(location.search);
+    var postId = parseInt(params.get('post'));
+    if (postId) showPost(postId);
+
+    // Mobile hamburger
+    var menuToggle = document.getElementById('menu-toggle');
+    if (menuToggle) {
+      menuToggle.addEventListener('click', function() {
+        var nav = document.getElementById('nav-links');
+        var open = nav.classList.toggle('open');
+        menuToggle.setAttribute('aria-expanded', String(open));
+      });
+    }
+  })();
+  </script>
+
+</body>
+</html>
