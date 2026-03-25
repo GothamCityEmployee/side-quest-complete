@@ -394,12 +394,19 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    (async function () {
-      // ── Redirect if already logged in ──────────────────────────────────────
-      if (window.SQCAuth && await SQCAuth.isLoggedIn()) {
-        const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
-        location.replace(redirect);
+    (function () {
+      // ── Redirect if already logged in (check after sqc ready) ─────────────
+      function checkLoggedIn() {
+        if (!window.SQCAuth) return;
+        SQCAuth.isLoggedIn().then(function(loggedIn) {
+          if (loggedIn) {
+            const redirect = new URLSearchParams(location.search).get('redirect') || 'account.html';
+            location.replace(redirect);
+          }
+        }).catch(function() {});
       }
+      if (window.sqc) { checkLoggedIn(); }
+      else { window.addEventListener('sqc:ready', checkLoggedIn, { once: true }); }
 
       // ── Tab switching ──────────────────────────────────────────────────────
       function switchTab(name) {
