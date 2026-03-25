@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <!-- Square Web Payments SDK (sandbox) -->
-  <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+  <!-- Square Web Payments SDK (production) -->
+  <script src="https://web.squarecdn.com/v1/square.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -704,8 +704,8 @@
     });
 
     // ── Square Web Payments SDK init ──
-    const SQUARE_APP_ID  = 'sandbox-sq0idb-PQheMLyAisYrDZ2dentCyA';
-    const SQUARE_LOCATION_ID = 'LK2CS9MZ9RGYF';
+    const SQUARE_APP_ID  = 'sq0idp-DX7MLYpUD7sXDBrhOrrbyw';
+    const SQUARE_LOCATION_ID = 'LR0YJT3PRMXG9';
     let squareCard = null;
 
     async function initSquare() {
