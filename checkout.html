@@ -384,6 +384,86 @@
       transition: opacity 0.2s;
     }
     a.btn-continue:hover { opacity: 0.88; }
+
+    /* ── Account Gate ── */
+    .gate-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 15px;
+      color: var(--purple);
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+    @media (max-width: 480px) { .gate-title { font-size: 11px; } }
+
+    .gate-cards {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .gate-card { flex: 1; padding: 28px 24px; }
+    .gate-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .gate-vert-divider { width: 1px; background: var(--border); flex-shrink: 0; }
+    @media (max-width: 580px) {
+      .gate-cards { flex-direction: column; }
+      .gate-vert-divider { width: auto; height: 1px; }
+    }
+
+    input[type="password"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    input[type="password"]:focus { border-color: var(--purple); }
+
+    .gate-error {
+      color: #ff4444;
+      font-size: 13px;
+      min-height: 18px;
+      margin-top: 8px;
+    }
+    .gate-guest-wrap {
+      text-align: center;
+      margin-top: 20px;
+      padding-bottom: 16px;
+    }
+    .gate-guest-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.15s;
+    }
+    .gate-guest-btn:hover { color: var(--text); }
+
+    .loggedin-bar {
+      background: rgba(57,255,20,0.08);
+      border: 1px solid rgba(57,255,20,0.25);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 16px 0 0;
+    }
+    .loggedin-bar strong { color: var(--green); }
   </style>
 </head>
 <body>
@@ -396,8 +476,60 @@
     </a>
   </div>
 
+  <!-- Account Gate -->
+  <div id="account-gate" style="display:none;">
+    <div class="checkout-wrap" style="padding-top:36px;">
+      <h1 class="gate-title">Start Your Quest</h1>
+      <div class="gate-cards">
+        <!-- Login -->
+        <div class="gate-card">
+          <h3 class="gate-card-title">Log In</h3>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="mario@mushroom.kingdom" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" />
+          </div>
+          <div id="login-error" class="gate-error"></div>
+          <button class="btn-primary" id="btn-login" style="margin-top:12px;">Log In</button>
+        </div>
+        <div class="gate-vert-divider"></div>
+        <!-- Create Account -->
+        <div class="gate-card">
+          <h3 class="gate-card-title">Create Account</h3>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Name</label>
+            <input type="text" id="signup-name" placeholder="Mario Bros" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Email</label>
+            <input type="email" id="signup-email" placeholder="mario@mushroom.kingdom" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Password</label>
+            <input type="password" id="signup-password" placeholder="••••••••" />
+          </div>
+          <div id="signup-error" class="gate-error"></div>
+          <button class="btn-primary" id="btn-signup" style="margin-top:12px;">Create Account</button>
+        </div>
+      </div>
+      <div class="gate-guest-wrap">
+        <button class="gate-guest-btn" id="btn-guest">Continue as Guest →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logged-in bar (shown instead of gate when already logged in) -->
+  <div id="logged-in-bar" style="display:none;">
+    <div class="checkout-wrap" style="padding-top:0;padding-bottom:0;">
+      <div class="loggedin-bar">✓ Logged in as <strong id="loggedin-name"></strong></div>
+    </div>
+  </div>
+
   <!-- Steps bar -->
-  <div class="steps-bar" id="steps-bar">
+  <div class="steps-bar" id="steps-bar" style="display:none;">
     <div class="step-pill active" id="step-pill-1"><span class="step-num">1</span> Cart</div>
     <div class="step-connector"></div>
     <div class="step-pill pending" id="step-pill-2"><span class="step-num">2</span> Shipping</div>
@@ -407,7 +539,7 @@
     <div class="step-pill pending" id="step-pill-4"><span class="step-num">4</span> Confirmation</div>
   </div>
 
-  <div class="checkout-wrap">
+  <div class="checkout-wrap" id="checkout-main" style="display:none;">
 
     <!-- ── STEP 1: Cart Review ── -->
     <div class="step-panel active" id="panel-1">
@@ -526,6 +658,7 @@
   <script>
   (function() {
     // ── State ──
+    let currentUser = null;
     let cart = [];
     let shippingMethod = 'standard';
     let currentStep = 1;
@@ -797,14 +930,8 @@
           throw new Error(msg);
         }
 
-        // Get logged-in user
-        let userId = null;
-        try {
-          if (window.SQCAuth && window.sqc) {
-            const user = await window.SQCAuth.getUser();
-            userId = user?.id || null;
-          }
-        } catch(e) {}
+        // Use user from account gate
+        const userId = currentUser?.id || null;
 
         // Snapshot cart for confirmation display
         localStorage.setItem('sqc-cart-snapshot', JSON.stringify(cart));
@@ -886,10 +1013,89 @@
       updateTotals();
     }
 
+    // ── Account gate helpers ──
+    function proceedToCheckout() {
+      document.getElementById('account-gate').style.display = 'none';
+      document.getElementById('steps-bar').style.display = '';
+      document.getElementById('checkout-main').style.display = '';
+    }
+
+    async function initAuth() {
+      try {
+        if (window.SQCAuth) {
+          const user = await window.SQCAuth.getUser();
+          if (user) {
+            const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Friend';
+            currentUser = { id: user.id, email: user.email, name };
+            document.getElementById('loggedin-name').textContent = name;
+            document.getElementById('logged-in-bar').style.display = '';
+            proceedToCheckout();
+            return;
+          }
+        }
+      } catch(e) {}
+      document.getElementById('account-gate').style.display = '';
+    }
+
+    document.getElementById('btn-login').addEventListener('click', async function() {
+      const btn = this;
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+      errEl.textContent = '';
+      if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+      try {
+        const result = await window.SQCAuth.login(email, password);
+        if (!result.success) { errEl.textContent = result.error || 'Login failed.'; return; }
+        currentUser = result.user;
+        document.getElementById('loggedin-name').textContent = currentUser.name;
+        document.getElementById('logged-in-bar').style.display = '';
+        proceedToCheckout();
+      } catch(e) {
+        errEl.textContent = 'Login failed. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    });
+
+    document.getElementById('btn-signup').addEventListener('click', async function() {
+      const btn = this;
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const errEl = document.getElementById('signup-error');
+      errEl.textContent = '';
+      if (!name || !email || !password) { errEl.textContent = 'All fields are required.'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      try {
+        const result = await window.SQCAuth.register(name, email, password);
+        if (!result.success) { errEl.textContent = result.error || 'Sign up failed.'; return; }
+        currentUser = result.user;
+        document.getElementById('loggedin-name').textContent = currentUser.name;
+        document.getElementById('logged-in-bar').style.display = '';
+        proceedToCheckout();
+      } catch(e) {
+        errEl.textContent = 'Sign up failed. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+
+    document.getElementById('btn-guest').addEventListener('click', function() {
+      currentUser = null;
+      proceedToCheckout();
+    });
+
     // ── Init ──
     loadCart();
     renderCart();
     updateTotals();
+    initAuth();
   })();
   </script>
 
