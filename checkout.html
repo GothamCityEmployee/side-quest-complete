@@ -455,6 +455,20 @@
             </div>
             <span class="ship-price" id="standard-price">$6.99</span>
           </label>
+          <label class="shipping-option" id="ship-opt-pickup">
+            <input type="radio" name="shipping_method" value="pickup" />
+            <div class="ship-label">
+              <div class="ship-name">Pick Up In Store</div>
+              <div class="ship-days">127 W Rodney French Blvd, Kilburn Mill · Sat–Sun 10am–4pm</div>
+            </div>
+            <span class="ship-price" style="color:#39ff14">FREE</span>
+          </label>
+        </div>
+
+        <div id="pickup-note" style="display:none;background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.25);border-radius:8px;padding:14px 16px;font-size:13px;color:#ccc;margin-bottom:16px;">
+          📍 <strong style="color:white">Pick up at:</strong> 127 W Rodney French Blvd, Suite S1-39A, Kilburn Mill, New Bedford, MA 02744<br>
+          🕐 <strong style="color:white">Hours:</strong> Saturday & Sunday 10am – 4pm<br>
+          <span style="color:#888;font-size:12px;margin-top:6px;display:block;">We'll have your order ready — just show your order confirmation when you arrive.</span>
         </div>
 
         <div class="btn-row">
@@ -560,6 +574,7 @@
       return cart.reduce((s, i) => s + i.price * i.qty, 0);
     }
     function getShipping(subtotal) {
+      if (shippingMethod === 'pickup') return 0;
       if (subtotal >= FREE_THRESHOLD) return 0;
       return SHIPPING_STANDARD;
     }
@@ -602,7 +617,7 @@
       });
 
       const stdEl = document.getElementById('standard-price');
-      if (stdEl) stdEl.textContent = discounted >= FREE_THRESHOLD ? 'FREE 🎉' : fmt(SHIPPING_STANDARD);
+      if (stdEl) stdEl.textContent = (shippingMethod !== 'pickup' && discounted >= FREE_THRESHOLD) ? 'FREE 🎉' : fmt(SHIPPING_STANDARD);
     }
 
     // ── Render cart items ──
@@ -673,7 +688,10 @@
     document.getElementById('s-state')?.addEventListener('input', updateTotals);
 
     document.getElementById('btn-to-payment').addEventListener('click', function() {
-      const required = ['s-first','s-last','s-email','s-address','s-city','s-state','s-zip'];
+      const isPickup = shippingMethod === 'pickup';
+      const required = isPickup
+        ? ['s-first','s-last','s-email']
+        : ['s-first','s-last','s-email','s-address','s-city','s-state','s-zip'];
       let ok = true;
       required.forEach(id => {
         const el = document.getElementById(id);
@@ -681,11 +699,13 @@
       });
       if (!ok) { alert('Please fill in all required fields.'); return; }
 
-      // Block HI / AK
-      const state = document.getElementById('s-state').value.trim().toUpperCase();
-      if (NO_SHIP_STATES.includes(state)) {
-        alert('Sorry — we don\'t currently ship to Hawaii or Alaska.');
-        return;
+      // Block HI / AK for shipping only
+      if (!isPickup) {
+        const state = document.getElementById('s-state').value.trim().toUpperCase();
+        if (NO_SHIP_STATES.includes(state)) {
+          alert('Sorry — we don\'t currently ship to Hawaii or Alaska.');
+          return;
+        }
       }
 
       updateTotals();
@@ -699,6 +719,20 @@
         shippingMethod = e.target.value;
         document.querySelectorAll('.shipping-option').forEach(opt => opt.classList.remove('selected'));
         e.target.closest('.shipping-option').classList.add('selected');
+
+        // Show/hide address fields for pickup
+        const addrFields = ['s-address','s-city','s-state','s-zip'];
+        const isPickup = shippingMethod === 'pickup';
+        addrFields.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.closest('.form-group').style.opacity = isPickup ? '0.4' : '1';
+            el.required = !isPickup;
+          }
+        });
+        const pickupNote = document.getElementById('pickup-note');
+        if (pickupNote) pickupNote.style.display = isPickup ? 'block' : 'none';
+
         updateTotals();
       }
     });
