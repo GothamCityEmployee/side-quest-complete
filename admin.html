@@ -498,8 +498,17 @@
 
   async function deleteProduct(id) {
     if (!confirm('Delete this product?')) return;
-    const { error } = await window.sqc.from('products').delete().eq('id', id);
-    if (error) { alert('Error deleting: ' + error.message); return; }
+    if (!window.sqc) { alert('Database not connected. Please refresh and try again.'); return; }
+    const { data, error } = await window.sqc.from('products').delete().eq('id', id).select();
+    if (error) {
+      alert('Delete failed: ' + error.message + '\n\nCode: ' + (error.code || 'unknown'));
+      console.error('Delete error:', error);
+      return;
+    }
+    if (!data || data.length === 0) {
+      alert('Delete blocked — Supabase Row Level Security is preventing this.\n\nTo fix: Go to your Supabase dashboard → Table Editor → products → RLS Policies → add a policy allowing DELETE for the anon role.');
+      return;
+    }
     window.SQCProducts.clearCache();
     renderAll();
   }
