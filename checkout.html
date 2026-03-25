@@ -415,9 +415,19 @@
       <div id="cart-items-list"></div>
       <div class="totals-box" id="totals-box-1">
         <div class="totals-row"><span>Subtotal</span><span id="subtotal-1">$0.00</span></div>
+        <div class="totals-row" id="discount-row-1" style="display:none"><span style="color:#39ff14">Coupon (SHIP50)</span><span style="color:#39ff14" id="discount-1">-$0.00</span></div>
         <div class="totals-row"><span>Shipping</span><span id="shipping-1">—</span></div>
+        <div class="totals-row"><span>Tax (6.25%)</span><span id="tax-1">$0.00</span></div>
         <div class="totals-row total"><span>Total</span><span class="total-amt" id="total-1">$0.00</span></div>
       </div>
+
+      <!-- Coupon -->
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <input type="text" id="coupon-input" placeholder="Coupon code" style="flex:1;background:#1a1a1a;border:1px solid #333;border-radius:7px;color:#e8e8e8;font-size:14px;padding:11px 14px;" />
+        <button class="btn-secondary" style="margin-top:0;width:auto;padding:11px 20px;" onclick="applyCoupon()">Apply</button>
+      </div>
+      <div id="coupon-msg" style="font-size:13px;margin-top:8px;min-height:18px;"></div>
+
       <button class="btn-primary" id="btn-to-shipping">Continue to Shipping →</button>
     </div>
 
@@ -441,17 +451,9 @@
             <input type="radio" name="shipping_method" value="standard" checked />
             <div class="ship-label">
               <div class="ship-name">Standard Shipping</div>
-              <div class="ship-days">5–7 business days</div>
+              <div class="ship-days">5–7 business days · Free over $50</div>
             </div>
-            <span class="ship-price" id="standard-price">$8.99</span>
-          </label>
-          <label class="shipping-option" id="ship-opt-express">
-            <input type="radio" name="shipping_method" value="express" />
-            <div class="ship-label">
-              <div class="ship-name">Express Shipping</div>
-              <div class="ship-days">2–3 business days</div>
-            </div>
-            <span class="ship-price">$14.99</span>
+            <span class="ship-price" id="standard-price">$6.99</span>
           </label>
         </div>
 
@@ -475,7 +477,9 @@
       <div style="margin-top: 24px;">
         <div class="totals-box" id="totals-box-3">
           <div class="totals-row"><span>Subtotal</span><span id="subtotal-3">$0.00</span></div>
+          <div class="totals-row" id="discount-row-3" style="display:none"><span style="color:#39ff14">Coupon (SHIP50)</span><span style="color:#39ff14" id="discount-3">-$0.00</span></div>
           <div class="totals-row"><span>Shipping</span><span id="shipping-3">—</span></div>
+          <div class="totals-row"><span>Tax (6.25% MA)</span><span id="tax-3">$0.00</span></div>
           <div class="totals-row total"><span>Total</span><span class="total-amt" id="total-3">$0.00</span></div>
         </div>
         <div class="btn-row" style="margin-top: 16px;">
@@ -511,9 +515,11 @@
     let cart = [];
     let shippingMethod = 'standard';
     let currentStep = 1;
-    const SHIPPING_STANDARD = 8.99;
-    const SHIPPING_EXPRESS = 14.99;
+    const SHIPPING_STANDARD = 6.99;
     const FREE_THRESHOLD = 50;
+    const TAX_RATE = 0.0625; // MA sales tax 6.25%
+    let couponApplied = false;
+    let couponDiscount = 0;
 
     // ── Load cart ──
     function loadCart() {
@@ -530,29 +536,45 @@
       return cart.reduce((s, i) => s + i.price * i.qty, 0);
     }
     function getShipping(subtotal) {
-      if (subtotal >= FREE_THRESHOLD && shippingMethod === 'standard') return 0;
-      return shippingMethod === 'express' ? SHIPPING_EXPRESS : SHIPPING_STANDARD;
+      if (subtotal >= FREE_THRESHOLD) return 0;
+      return SHIPPING_STANDARD;
+    }
+    function getTax(subtotal, shipping) {
+      return (subtotal + shipping) * TAX_RATE;
     }
     function fmt(n) { return '$' + n.toFixed(2); }
 
     function updateTotals() {
       const sub = getSubtotal();
-      const ship = getShipping(sub);
-      const total = sub + ship;
-      const shipLabel = ship === 0 ? 'FREE' : fmt(ship);
+      const discounted = Math.max(0, sub - couponDiscount);
+      const ship = getShipping(discounted);
+      const tax = getTax(discounted, ship);
+      const total = discounted + ship + tax;
+      const shipLabel = ship === 0 ? 'FREE 🎉' : fmt(ship);
 
       ['1','3'].forEach(i => {
-        const el = document.getElementById('subtotal-' + i);
-        const sel = document.getElementById('shipping-' + i);
-        const tel = document.getElementById('total-' + i);
-        if (el) el.textContent = fmt(sub);
-        if (sel) sel.textContent = shipLabel;
-        if (tel) tel.textContent = fmt(total);
+        const subEl   = document.getElementById('subtotal-' + i);
+        const shipEl  = document.getElementById('shipping-' + i);
+        const taxEl   = document.getElementById('tax-' + i);
+        const totalEl = document.getElementById('total-' + i);
+        const discEl  = document.getElementById('discount-' + i);
+        if (subEl)   subEl.textContent   = fmt(sub);
+        if (shipEl)  shipEl.textContent  = shipLabel;
+        if (taxEl)   taxEl.textContent   = fmt(tax);
+        if (totalEl) totalEl.textContent = fmt(total);
+        if (discEl) {
+          const discRow = document.getElementById('discount-row-' + i);
+          if (couponDiscount > 0 && discRow) {
+            discRow.style.display = '';
+            discEl.textContent = '-' + fmt(couponDiscount);
+          } else if (discRow) {
+            discRow.style.display = 'none';
+          }
+        }
       });
 
-      // update standard price label based on free threshold
       const stdEl = document.getElementById('standard-price');
-      if (stdEl) stdEl.textContent = sub >= FREE_THRESHOLD ? 'FREE' : fmt(SHIPPING_STANDARD);
+      if (stdEl) stdEl.textContent = discounted >= FREE_THRESHOLD ? 'FREE 🎉' : fmt(SHIPPING_STANDARD);
     }
 
     // ── Render cart items ──
@@ -677,8 +699,10 @@
       errEl.style.display = 'none';
 
       const sub   = getSubtotal();
-      const ship  = getShipping(sub);
-      const total = sub + ship;
+      const discounted = Math.max(0, sub - couponDiscount);
+      const ship  = getShipping(discounted);
+      const tax   = getTax(discounted, ship);
+      const total = discounted + ship + tax;
 
       const shippingAddress = {
         firstName: document.getElementById('s-first')?.value  || '',
@@ -758,6 +782,36 @@
         btn.textContent = 'Place Order →';
       }
     });
+
+    // ── Coupon ──
+    function applyCoupon() {
+      const code = (document.getElementById('coupon-input')?.value || '').trim().toUpperCase();
+      const msg = document.getElementById('coupon-msg');
+      const sub = getSubtotal();
+
+      if (code !== 'SHIP50') {
+        msg.style.color = '#ff4444';
+        msg.textContent = '❌ Invalid coupon code.';
+        couponApplied = false;
+        couponDiscount = 0;
+        updateTotals();
+        return;
+      }
+      if (sub < 50) {
+        msg.style.color = '#ff4444';
+        msg.textContent = '❌ SHIP50 requires a subtotal of $50 or more.';
+        couponApplied = false;
+        couponDiscount = 0;
+        updateTotals();
+        return;
+      }
+      // SHIP50 = free shipping (apply shipping cost as discount)
+      couponApplied = true;
+      couponDiscount = getShipping(sub); // wipes out the shipping cost
+      msg.style.color = '#39ff14';
+      msg.textContent = '✅ Coupon applied! Free shipping unlocked.';
+      updateTotals();
+    }
 
     // ── Init ──
     loadCart();
