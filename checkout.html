@@ -417,7 +417,7 @@
         <div class="totals-row"><span>Subtotal</span><span id="subtotal-1">$0.00</span></div>
         <div class="totals-row" id="discount-row-1" style="display:none"><span style="color:#39ff14">Coupon (SHIP50)</span><span style="color:#39ff14" id="discount-1">-$0.00</span></div>
         <div class="totals-row"><span>Shipping</span><span id="shipping-1">—</span></div>
-        <div class="totals-row"><span>Tax (6.25%)</span><span id="tax-1">$0.00</span></div>
+        <div class="totals-row"><span class="tax-label">Tax</span><span id="tax-1">—</span></div>
         <div class="totals-row total"><span>Total</span><span class="total-amt" id="total-1">$0.00</span></div>
       </div>
 
@@ -479,7 +479,7 @@
           <div class="totals-row"><span>Subtotal</span><span id="subtotal-3">$0.00</span></div>
           <div class="totals-row" id="discount-row-3" style="display:none"><span style="color:#39ff14">Coupon (SHIP50)</span><span style="color:#39ff14" id="discount-3">-$0.00</span></div>
           <div class="totals-row"><span>Shipping</span><span id="shipping-3">—</span></div>
-          <div class="totals-row"><span>Tax (6.25% MA)</span><span id="tax-3">$0.00</span></div>
+          <div class="totals-row"><span class="tax-label">Tax</span><span id="tax-3">—</span></div>
           <div class="totals-row total"><span>Total</span><span class="total-amt" id="total-3">$0.00</span></div>
         </div>
         <div class="btn-row" style="margin-top: 16px;">
@@ -517,9 +517,33 @@
     let currentStep = 1;
     const SHIPPING_STANDARD = 6.99;
     const FREE_THRESHOLD = 50;
-    const TAX_RATE = 0.0625; // MA sales tax 6.25%
     let couponApplied = false;
     let couponDiscount = 0;
+
+    // ── State tax rates (48 contiguous states + DC) ──
+    // Source: 2024 state-level rates. Does not include county/city surtax.
+    // HI and AK excluded — no shipping there.
+    const STATE_TAX = {
+      AL: 0.04, AZ: 0.056, AR: 0.065, CA: 0.0725, CO: 0.029,
+      CT: 0.0635, DE: 0.00, DC: 0.06, FL: 0.06, GA: 0.04,
+      ID: 0.06, IL: 0.0625, IN: 0.07, IA: 0.06, KS: 0.065,
+      KY: 0.06, LA: 0.0445, ME: 0.055, MD: 0.06, MA: 0.0625,
+      MI: 0.06, MN: 0.06875, MS: 0.07, MO: 0.04225, MT: 0.00,
+      NE: 0.055, NV: 0.0685, NH: 0.00, NJ: 0.06625, NM: 0.05125,
+      NY: 0.04, NC: 0.0475, ND: 0.05, OH: 0.0575, OK: 0.045,
+      OR: 0.00, PA: 0.06, RI: 0.07, SC: 0.06, SD: 0.045,
+      TN: 0.07, TX: 0.0625, UT: 0.0485, VT: 0.06, VA: 0.053,
+      WA: 0.065, WV: 0.06, WI: 0.05, WY: 0.04,
+    };
+    const NO_SHIP_STATES = ['HI', 'AK'];
+
+    function getTaxRate() {
+      const stateEl = document.getElementById('s-state');
+      if (!stateEl) return 0;
+      const state = stateEl.value.trim().toUpperCase();
+      if (NO_SHIP_STATES.includes(state)) return 0;
+      return STATE_TAX[state] || 0;
+    }
 
     // ── Load cart ──
     function loadCart() {
@@ -540,7 +564,7 @@
       return SHIPPING_STANDARD;
     }
     function getTax(subtotal, shipping) {
-      return (subtotal + shipping) * TAX_RATE;
+      return (subtotal + shipping) * getTaxRate();
     }
     function fmt(n) { return '$' + n.toFixed(2); }
 
@@ -560,7 +584,11 @@
         const discEl  = document.getElementById('discount-' + i);
         if (subEl)   subEl.textContent   = fmt(sub);
         if (shipEl)  shipEl.textContent  = shipLabel;
-        if (taxEl)   taxEl.textContent   = fmt(tax);
+        const rate = getTaxRate();
+        const stateVal = (document.getElementById('s-state')?.value || '').trim().toUpperCase();
+        const taxLabel = rate > 0 ? `Tax (${(rate*100).toFixed(2).replace(/\.?0+$/,'')}% ${stateVal})` : 'Tax';
+        document.querySelectorAll('.tax-label').forEach(el => el.textContent = taxLabel);
+        if (taxEl)   taxEl.textContent   = rate > 0 ? fmt(tax) : '—';
         if (totalEl) totalEl.textContent = fmt(total);
         if (discEl) {
           const discRow = document.getElementById('discount-row-' + i);
@@ -641,6 +669,9 @@
       goToStep(2);
     });
     document.getElementById('btn-back-1').addEventListener('click', () => goToStep(1));
+    // Re-calculate tax when state is typed
+    document.getElementById('s-state')?.addEventListener('input', updateTotals);
+
     document.getElementById('btn-to-payment').addEventListener('click', function() {
       const required = ['s-first','s-last','s-email','s-address','s-city','s-state','s-zip'];
       let ok = true;
@@ -649,6 +680,14 @@
         if (!el.value.trim()) { el.focus(); ok = false; }
       });
       if (!ok) { alert('Please fill in all required fields.'); return; }
+
+      // Block HI / AK
+      const state = document.getElementById('s-state').value.trim().toUpperCase();
+      if (NO_SHIP_STATES.includes(state)) {
+        alert('Sorry — we don\'t currently ship to Hawaii or Alaska.');
+        return;
+      }
+
       updateTotals();
       goToStep(3);
     });
