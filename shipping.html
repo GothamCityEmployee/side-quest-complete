@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Shipping policy for Side Quest Complete — flat rate shipping, free over $50, and free in-store pickup at Kilburn Mill, New Bedford, MA." />
+  <meta name="theme-color" content="#111111" />
+  <title>Shipping Policy — Side Quest Complete</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .policy-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+    .policy-page h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      color: #39ff14;
+      margin-bottom: 32px;
+    }
+    .policy-page h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #b03af5;
+      margin: 32px 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .policy-page p,
+    .policy-page li {
+      font-size: 0.95rem;
+      color: #ccc;
+      line-height: 1.7;
+    }
+    .policy-page ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .policy-page ul li::before {
+      content: "▸ ";
+      color: #39ff14;
+    }
+    .policy-page .back-link {
+      display: inline-block;
+      margin-bottom: 40px;
+      color: #888;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .policy-page .back-link:hover { color: #39ff14; }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ───────────────────────────────────────────────────────────── -->
+  <header id="site-header" role="banner">
+    <nav class="nav container" aria-label="Main navigation">
+
+      <a href="index.html" class="nav-logo" aria-label="Side Quest Complete — Home">
+        <img
+          src="logos/Misc Logos.PNG"
+          alt="Side Quest Complete logo"
+          style="height:36px;width:auto;object-fit:contain;"
+        />
+      </a>
+
+      <ul class="nav-links" id="nav-links" role="list">
+        <li><a href="index.html#shop">Shop</a></li>
+        <li><a href="index.html#categories">Browse</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="blog.html">Blog</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="account.html" aria-label="Wishlist">❤️</a></li>
+        <li><a href="login.html">👤 Login</a></li>
+      </ul>
+
+      <div class="nav-right">
+        <button id="cart-btn" class="cart-btn" aria-label="Go to checkout" onclick="window.location.href='checkout.html'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span>Cart</span>
+          <span id="cart-count" class="cart-count" aria-live="polite" aria-label="Items in cart">0</span>
+        </button>
+
+        <button
+          id="menu-toggle"
+          class="menu-toggle"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="nav-links"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+    </nav>
+  </header>
+
+  <!-- ─── Content ──────────────────────────────────────────────────────────── -->
+  <main>
+    <div class="policy-page">
+      <a href="index.html" class="back-link">← Back to Home</a>
+
+      <h1>Shipping Policy</h1>
+
+      <h2>Rates</h2>
+      <ul>
+        <li>Standard Shipping: $6.99 flat rate</li>
+        <li>Free shipping on orders over $50</li>
+      </ul>
+
+      <h2>Delivery</h2>
+      <ul>
+        <li>Estimated delivery: 5–7 business days</li>
+        <li>We ship to all 48 contiguous US states</li>
+        <li>We do not currently ship to Hawaii or Alaska</li>
+      </ul>
+
+      <h2>Processing</h2>
+      <ul>
+        <li>Orders are processed within 1–2 business days</li>
+        <li>Tracking info will be emailed when your order ships</li>
+      </ul>
+
+      <h2>Pick Up In Store</h2>
+      <ul>
+        <li>Free — available at Kilburn Mill</li>
+        <li>127 W Rodney French Blvd, Suite S1-39A, Kilburn Mill, New Bedford, MA 02744</li>
+        <li>Saturday – Sunday: 10am – 4pm</li>
+      </ul>
+    </div>
+  </main>
+
+  <!-- ─── Footer ────────────────────────────────────────────────────────────── -->
+  <footer id="contact" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+
+        <div class="footer-brand">
+          <div class="nav-logo" style="margin-bottom: 16px;">
+            <img
+              src="logos/Misc Logos.PNG"
+              alt="Side Quest Complete"
+              style="height:32px;width:auto;object-fit:contain;"
+              loading="lazy"
+            />
+          </div>
+          <p>Purveyor of quality old s#!t since we couldn't stop buying it ourselves.</p>
+          <div class="footer-social">
+            <a href="https://www.instagram.com/side_quest_complete/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">📸</a>
+            <a href="mailto:sidequestcompletellc@gmail.com" class="social-link" aria-label="Email">✉️</a>
+            <a href="https://ebay.us/m/tRauOR" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="eBay store">🛒</a>
+          </div>
+          <p style="font-size:0.75rem;color:#555;margin-top:10px;">⭐ 1,800+ sales · 100% positive feedback on eBay</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="index.html#shop" data-filter="toys">Toys</a></li>
+            <li><a href="index.html#shop" data-filter="cards">Cards</a></li>
+            <li><a href="index.html#shop" data-filter="games">Games</a></li>
+            <li><a href="index.html#shop" data-filter="comics">Comics</a></li>
+            <li><a href="index.html#shop" data-filter="misc">Misc</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Info</h4>
+          <ul>
+            <li><a href="index.html#about">About Us</a></li>
+            <li><a href="blog.html">Blog</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+            <li><a href="shipping.html">Shipping Policy</a></li>
+            <li><a href="returns.html">Returns</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Visit Us</h4>
+          <address class="footer-address">
+            Side Quest Complete<br>
+            127 W Rodney French Blvd<br>
+            Suite S1-39A, Kilburn Mill<br>
+            New Bedford, MA 02744<br>
+            <br>
+            <a href="mailto:sidequestcompletellc@gmail.com" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">
+              sidequestcompletellc@gmail.com
+            </a><br>
+            <br>
+            Sat: 10am – 4pm<br>
+            Sun: 10am – 4pm
+          </address>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">
+          &copy; 2026 Side Quest Complete. All rights reserved.
+        </p>
+        <p class="footer-credit">
+          Built with <span>♥</span> for retro culture
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="main.js"></script>
+
+</body>
+</html>
