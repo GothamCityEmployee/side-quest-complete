@@ -96,11 +96,17 @@ async function addToCart(productId) {
   flashAddedEffect(productId);
 }
 
-function removeFromCart(productId) {
+async function removeFromCart(productId) {
   cart = cart.filter(item => item.id !== productId);
   saveCart();
   updateCartCount();
   renderCartItems();
+
+  // Restore item to in-stock in Supabase (vintage/one-of-a-kind items)
+  if (window.sqc) {
+    await window.sqc.from('products').update({ in_stock: true, quantity: 1 }).eq('id', productId);
+    window.SQCProducts.clearCache();
+  }
 }
 
 function updateQty(productId, delta) {
