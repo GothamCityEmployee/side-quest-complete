@@ -3,6 +3,91 @@
 // ─── State ────────────────────────────────────────────────────────────────────
 let cart = JSON.parse(localStorage.getItem('sqc-cart')) || [];
 
+// ─── Cart Reservation Timer (10 minutes) ─────────────────────────────────────
+const RESERVATION_MS = 10 * 60 * 1000; // 10 minutes
+let reservationInterval = null;
+
+function getReservationExpiry() {
+  return parseInt(localStorage.getItem('sqc-cart-expiry') || '0', 10);
+}
+
+function setReservationExpiry() {
+  const expiry = Date.now() + RESERVATION_MS;
+  localStorage.setItem('sqc-cart-expiry', String(expiry));
+  return expiry;
+}
+
+function clearReservationExpiry() {
+  localStorage.removeItem('sqc-cart-expiry');
+}
+
+function startReservationTimer() {
+  if (reservationInterval) clearInterval(reservationInterval);
+
+  const timerEl   = document.getElementById('cart-reservation-timer');
+  const displayEl = document.getElementById('cart-timer-display');
+  if (!timerEl || !displayEl) return;
+
+  // If no expiry set yet, set it now
+  if (!getReservationExpiry()) setReservationExpiry();
+
+  timerEl.style.display = 'block';
+
+  reservationInterval = setInterval(async () => {
+    const remaining = getReservationExpiry() - Date.now();
+
+    if (remaining <= 0) {
+      clearInterval(reservationInterval);
+      reservationInterval = null;
+      await expireCart();
+      return;
+    }
+
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    displayEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    // Turn red in last 2 minutes
+    timerEl.style.color = remaining < 120000 ? '#ff4444' : '#ffd700';
+  }, 1000);
+}
+
+function stopReservationTimer() {
+  if (reservationInterval) clearInterval(reservationInterval);
+  reservationInterval = null;
+  clearReservationExpiry();
+  const timerEl = document.getElementById('cart-reservation-timer');
+  if (timerEl) timerEl.style.display = 'none';
+}
+
+async function expireCart() {
+  // Release all items back to inventory
+  if (window.sqc) {
+    for (const item of cart) {
+      await window.sqc.from('products').update({ in_stock: true, quantity: 1 }).eq('id', item.id);
+    }
+    window.SQCProducts.clearCache();
+  }
+
+  // Clear cart
+  cart = [];
+  saveCart();
+  clearReservationExpiry();
+  updateCartCount();
+  renderCartItems();
+
+  const timerEl = document.getElementById('cart-reservation-timer');
+  if (timerEl) {
+    timerEl.style.color = '#ff4444';
+    timerEl.style.display = 'block';
+    timerEl.innerHTML = '⌛ Reservation expired — items returned to inventory.';
+  }
+
+  setTimeout(() => {
+    if (timerEl) timerEl.style.display = 'none';
+  }, 4000);
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderCartItems();
@@ -16,6 +101,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
   } else {
     window.addEventListener('sqc:ready', loadProducts, { once: true });
+  }
+
+  // Resume reservation timer if cart has items and expiry is still valid
+  if (cart.length > 0) {
+    const expiry = getReservationExpiry();
+    if (expiry && expiry > Date.now()) {
+      startReservationTimer();
+    } else if (expiry && expiry <= Date.now()) {
+      // Already expired while they were away — release immediately
+      window.addEventListener('sqc:ready', () => expireCart(), { once: true });
+    }
   }
 });
 
@@ -94,6 +190,10 @@ async function addToCart(productId) {
   renderCartItems();
   openCartDrawer();
   flashAddedEffect(productId);
+
+  // Start/reset the 10-min reservation timer
+  setReservationExpiry();
+  startReservationTimer();
 }
 
 async function removeFromCart(productId) {
@@ -107,6 +207,9 @@ async function removeFromCart(productId) {
     await window.sqc.from('products').update({ in_stock: true, quantity: 1 }).eq('id', productId);
     window.SQCProducts.clearCache();
   }
+
+  // Stop timer if cart is now empty
+  if (cart.length === 0) stopReservationTimer();
 }
 
 function updateQty(productId, delta) {
