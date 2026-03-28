@@ -773,7 +773,7 @@
             <div class="qty-controls">
               <button class="qty-btn" data-action="dec" data-idx="${idx}">−</button>
               <span class="qty-val">${item.qty}</span>
-              <button class="qty-btn" data-action="inc" data-idx="${idx}">+</button>
+              <button class="qty-btn" data-action="inc" data-idx="${idx}" disabled style="opacity:0.3;cursor:not-allowed;" title="Only 1 available">+</button>
             </div>
             <div class="cart-item-price">${fmt(item.price * item.qty)}</div>
           </div>
@@ -789,7 +789,7 @@
       if (!btn) return;
       const idx = +btn.dataset.idx;
       const action = btn.dataset.action;
-      if (action === 'inc') { cart[idx].qty++; }
+      if (action === 'inc') { /* qty capped at 1 for vintage items */ }
       else if (action === 'dec') { cart[idx].qty = Math.max(1, cart[idx].qty - 1); }
       else if (action === 'remove') { cart.splice(idx, 1); }
       saveCart();
@@ -1018,6 +1018,19 @@
       document.getElementById('account-gate').style.display = 'none';
       document.getElementById('steps-bar').style.display = '';
       document.getElementById('checkout-main').style.display = '';
+
+      // Auto-populate shipping form if user is logged in
+      if (currentUser) {
+        const nameParts = (currentUser.name || '').trim().split(' ');
+        const first = nameParts[0] || '';
+        const last  = nameParts.slice(1).join(' ') || '';
+        const firstEl = document.getElementById('s-first');
+        const lastEl  = document.getElementById('s-last');
+        const emailEl = document.getElementById('s-email');
+        if (firstEl && !firstEl.value) firstEl.value = first;
+        if (lastEl  && !lastEl.value)  lastEl.value  = last;
+        if (emailEl && !emailEl.value) emailEl.value = currentUser.email || '';
+      }
     }
 
     async function initAuth() {

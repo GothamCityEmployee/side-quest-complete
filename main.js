@@ -81,7 +81,10 @@ async function addToCart(productId) {
 
   const existing = cart.find(item => item.id === productId);
   if (existing) {
-    existing.qty += 1;
+    // Vintage/collectible items are one-of-a-kind — limit to 1 per item
+    flashAddedEffect(productId);
+    openCartDrawer();
+    return;
   } else {
     cart.push({ ...product, qty: 1 });
   }
