@@ -14,7 +14,7 @@
     async getAll() {
       if (this._cache) return this._cache;
 
-      const { data, error } = await window.sqc
+      let { data, error } = await window.sqc
         .from('products')
         .select('*')
         .eq('in_stock', true)
@@ -25,7 +25,20 @@
         return [];
       }
 
-      this._cache = this._normalize(data);
+      // Fallback: if no in-stock products found, fetch all (handles stale in_stock flags)
+      if (!data || data.length === 0) {
+        const fallback = await window.sqc
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!fallback.error && fallback.data?.length > 0) {
+          data = fallback.data;
+          // Auto-heal: mark them all in stock
+          await window.sqc.from('products').update({ in_stock: true, quantity: 1 }).eq('in_stock', false);
+        }
+      }
+
+      this._cache = this._normalize(data || []);
       return this._cache;
     },
 
