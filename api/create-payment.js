@@ -21,7 +21,7 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const STORE_EMAIL = 'sidequestcompletellc@gmail.com';
-const FROM_EMAIL  = 'orders@sidequestcomplete.com'; // update once domain verified in Resend
+const FROM_EMAIL  = 'Side Quest Complete <onboarding@resend.dev>'; // update to orders@sidequestcomplete.com once domain verified in Resend
 
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
