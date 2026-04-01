@@ -156,7 +156,7 @@ module.exports = async function handler(req, res) {
       sourceId,
       idempotencyKey: orderId,
       amountMoney: {
-        amount: Math.round(amount * 100),
+        amount: BigInt(Math.round(amount * 100)),
         currency,
       },
       note: `Side Quest Complete — Order ${orderId}`,
