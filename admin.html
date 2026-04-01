@@ -986,7 +986,7 @@
       const status = o.status || 'Processing';
       const statusCls = statusClsMap[status] || 'status-processing';
       const shortId = String(o.id).length > 8 ? String(o.id).substring(0, 8) + '…' : o.id;
-      const safeId = String(o.id).replace(/'/g, "\\'");
+      const safeId = String(o.id).replace(/[^a-zA-Z0-9\-_]/g, '_');
       return `<tr class="order-row" data-order-id="${safeId}" onclick="toggleOrderExpand('${safeId}')" style="cursor:pointer">
         <td><code style="font-size:11px;color:var(--purple)">${shortId}</code></td>
         <td style="color:var(--muted);font-size:12px">${date}</td>
