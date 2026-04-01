@@ -172,7 +172,7 @@ module.exports = async function handler(req, res) {
       shipping_address: shippingAddress || null,
       points_earned: Math.round(amount),
       square_payment_id: payment.id,
-    });
+    }).catch(e => console.error('Supabase order insert error:', e.message));
 
     // ── Decrement inventory ───────────────────────────────────────────────
     for (const item of orderItems) {
