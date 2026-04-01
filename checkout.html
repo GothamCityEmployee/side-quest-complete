@@ -1028,15 +1028,36 @@
 
       // Auto-populate shipping form if user is logged in
       if (currentUser) {
-        const nameParts = (currentUser.name || '').trim().split(' ');
-        const first = nameParts[0] || '';
-        const last  = nameParts.slice(1).join(' ') || '';
-        const firstEl = document.getElementById('s-first');
-        const lastEl  = document.getElementById('s-last');
         const emailEl = document.getElementById('s-email');
-        if (firstEl && !firstEl.value) firstEl.value = first;
-        if (lastEl  && !lastEl.value)  lastEl.value  = last;
         if (emailEl && !emailEl.value) emailEl.value = currentUser.email || '';
+
+        // Load saved shipping address from profile
+        if (window.sqc && currentUser.id) {
+          window.sqc
+            .from('profiles')
+            .select('shipping_address')
+            .eq('id', currentUser.id)
+            .single()
+            .then(({ data }) => {
+              const a = data?.shipping_address;
+              if (a) {
+                const set = (id, val) => { const el = document.getElementById(id); if (el && !el.value) el.value = val || ''; };
+                set('s-first',   a.firstName);
+                set('s-last',    a.lastName);
+                set('s-address', a.address);
+                set('s-city',    a.city);
+                set('s-state',   a.state);
+                set('s-zip',     a.zip);
+              } else {
+                // Fallback: use name from auth
+                const nameParts = (currentUser.name || '').trim().split(' ');
+                const firstEl = document.getElementById('s-first');
+                const lastEl  = document.getElementById('s-last');
+                if (firstEl && !firstEl.value) firstEl.value = nameParts[0] || '';
+                if (lastEl  && !lastEl.value)  lastEl.value  = nameParts.slice(1).join(' ') || '';
+              }
+            }).catch(() => {});
+        }
       }
     }
 

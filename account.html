@@ -678,6 +678,9 @@
           <a href="#orders" data-section="orders">
             <span class="nav-icon">📦</span> Order History
           </a>
+          <a href="#shipping" data-section="shipping">
+            <span class="nav-icon">🚚</span> Shipping Address
+          </a>
           <a href="#wishlist" data-section="wishlist">
             <span class="nav-icon">♥</span> Wishlist
           </a>
@@ -721,6 +724,63 @@
             <div class="profile-field">
               <span class="profile-label">LOYALTY TIER</span>
               <span class="profile-value" id="profile-tier-val"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Shipping Address ───────────────────────────────────────────── -->
+        <div id="section-shipping" class="account-section">
+          <div class="section-card">
+            <h2 class="section-card-title">Shipping Address</h2>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">This address will auto-fill at checkout.</p>
+
+            <div class="profile-field">
+              <span class="profile-label">FIRST NAME</span>
+              <div class="profile-edit-wrap">
+                <input type="text" class="profile-edit-input" id="ship-first" placeholder="First name" style="display:block" />
+              </div>
+            </div>
+
+            <div class="profile-field">
+              <span class="profile-label">LAST NAME</span>
+              <div class="profile-edit-wrap">
+                <input type="text" class="profile-edit-input" id="ship-last" placeholder="Last name" style="display:block" />
+              </div>
+            </div>
+
+            <div class="profile-field">
+              <span class="profile-label">ADDRESS</span>
+              <div class="profile-edit-wrap">
+                <input type="text" class="profile-edit-input" id="ship-address" placeholder="Street address" style="display:block" />
+              </div>
+            </div>
+
+            <div class="profile-field">
+              <span class="profile-label">CITY</span>
+              <div class="profile-edit-wrap">
+                <input type="text" class="profile-edit-input" id="ship-city" placeholder="City" style="display:block" />
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="profile-field">
+                <span class="profile-label">STATE</span>
+                <div class="profile-edit-wrap">
+                  <input type="text" class="profile-edit-input" id="ship-state" placeholder="MA" maxlength="2" style="display:block" />
+                </div>
+              </div>
+              <div class="profile-field">
+                <span class="profile-label">ZIP CODE</span>
+                <div class="profile-edit-wrap">
+                  <input type="text" class="profile-edit-input" id="ship-zip" placeholder="02740" maxlength="10" style="display:block" />
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:24px;display:flex;align-items:center;gap:12px;">
+              <button class="btn-sm purple" id="btn-save-shipping" style="padding:10px 24px;font-size:13px;">Save Address</button>
+              <span id="ship-save-msg" style="font-size:13px;color:var(--neon);display:none;">✅ Saved!</span>
+              <span id="ship-save-err" style="font-size:13px;color:#ff4444;display:none;"></span>
             </div>
           </div>
         </div>
@@ -1171,8 +1231,53 @@
       fillSidebar();
       renderProfile();
 
+      // ── Shipping Address ─────────────────────────────────────────────────
+      async function loadShippingAddress() {
+        const { data } = await window.sqc
+          .from('profiles')
+          .select('shipping_address')
+          .eq('id', user.id)
+          .single();
+        if (data?.shipping_address) {
+          const a = data.shipping_address;
+          document.getElementById('ship-first').value   = a.firstName || '';
+          document.getElementById('ship-last').value    = a.lastName  || '';
+          document.getElementById('ship-address').value = a.address   || '';
+          document.getElementById('ship-city').value    = a.city      || '';
+          document.getElementById('ship-state').value   = a.state     || '';
+          document.getElementById('ship-zip').value     = a.zip       || '';
+        }
+      }
+      loadShippingAddress();
+
+      document.getElementById('btn-save-shipping').addEventListener('click', async () => {
+        const msgEl = document.getElementById('ship-save-msg');
+        const errEl = document.getElementById('ship-save-err');
+        msgEl.style.display = 'none';
+        errEl.style.display = 'none';
+        const addr = {
+          firstName: document.getElementById('ship-first').value.trim(),
+          lastName:  document.getElementById('ship-last').value.trim(),
+          address:   document.getElementById('ship-address').value.trim(),
+          city:      document.getElementById('ship-city').value.trim(),
+          state:     document.getElementById('ship-state').value.trim().toUpperCase(),
+          zip:       document.getElementById('ship-zip').value.trim(),
+        };
+        const { error } = await window.sqc
+          .from('profiles')
+          .update({ shipping_address: addr })
+          .eq('id', user.id);
+        if (error) {
+          errEl.textContent   = 'Failed to save. Please try again.';
+          errEl.style.display = 'inline';
+        } else {
+          msgEl.style.display = 'inline';
+          setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+        }
+      });
+
       const hash          = location.hash.slice(1);
-      const validSections = ['profile', 'points', 'orders', 'wishlist'];
+      const validSections = ['profile', 'points', 'orders', 'wishlist', 'shipping'];
       if (validSections.includes(hash)) {
         showSection(hash);
       }
