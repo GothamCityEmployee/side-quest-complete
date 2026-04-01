@@ -614,8 +614,8 @@
     <div class="step-panel" id="panel-3">
       <h2 class="panel-title">Payment</h2>
 
-      <!-- Apple Pay / Google Pay via Square -->
-      <div id="square-apple-pay-container" style="margin-bottom:12px;display:none;"></div>
+      <!-- Apple Pay via Square -->
+      <button id="apple-pay-button" style="display:none;width:100%;height:48px;border-radius:8px;margin-bottom:12px;-webkit-appearance:-apple-pay-button;-apple-pay-button-type:plain;-apple-pay-button-style:black;"></button>
       <div id="digital-wallet-divider" style="display:none;text-align:center;margin:12px 0;color:#555;font-size:12px;letter-spacing:0.1em;">— OR PAY WITH CARD —</div>
 
       <!-- Square Web Payments SDK card form -->
@@ -889,7 +889,8 @@
       if (!window.Square) { console.error('Square SDK not loaded'); return; }
       const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
 
-      // ── Apple Pay / Google Pay ────────────────────────────────────
+      // ── Apple Pay ──────────────────────────────────────────────────
+      let applePay;
       try {
         const sub = getSubtotal();
         const discounted = Math.max(0, sub - couponDiscount);
@@ -906,18 +907,27 @@
           },
         });
 
-        const applePay = await payments.applePay(paymentRequest);
-        const appleContainer = document.getElementById('square-apple-pay-container');
-        const divider = document.getElementById('digital-wallet-divider');
-        await applePay.attach('#square-apple-pay-container');
-        appleContainer.style.display = 'block';
-        divider.style.display = 'block';
+        // Note: do NOT call applePay.attach() — Apple Pay button is native CSS
+        applePay = await payments.applePay(paymentRequest);
 
-        // Handle Apple Pay token
-        applePay.addEventListener('ontokenization', async (event) => {
-          const { tokenResult } = event.detail;
-          if (tokenResult.status === 'OK') {
-            await submitOrder(tokenResult.token);
+        const appleBtn = document.getElementById('apple-pay-button');
+        const divider  = document.getElementById('digital-wallet-divider');
+        appleBtn.style.display = 'block';
+        divider.style.display  = 'block';
+
+        appleBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            const tokenResult = await applePay.tokenize();
+            if (tokenResult.status === 'OK') {
+              await submitOrder(tokenResult.token);
+            } else {
+              const errEl = document.getElementById('square-payment-error');
+              errEl.textContent = tokenResult.errors?.map(e => e.message).join(', ') || 'Apple Pay failed';
+              errEl.style.display = 'block';
+            }
+          } catch(e) {
+            console.error('Apple Pay error:', e);
           }
         });
       } catch(e) {
