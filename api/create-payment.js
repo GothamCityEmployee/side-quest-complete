@@ -174,7 +174,7 @@ module.exports = async function handler(req, res) {
     const subtotal = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
     const shipping = Math.max(0, parseFloat((amount - subtotal).toFixed(2)));
 
-    await supabase.from('orders').insert({
+    const { error: orderError } = await supabase.from('orders').insert({
       id: orderId,
       user_id: userId || null,
       email: email || null,
@@ -186,7 +186,8 @@ module.exports = async function handler(req, res) {
       shipping_address: shippingAddress || null,
       points_earned: Math.round(amount),
       square_payment_id: payment.id,
-    }).catch(e => console.error('Supabase order insert error:', e.message));
+    });
+    if (orderError) console.error('Supabase order insert error:', orderError.message);
 
     // ── Decrement inventory ───────────────────────────────────────────────
     for (const item of orderItems) {
