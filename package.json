@@ -1,0 +1,26 @@
+{
+  "name": "website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GothamCityEmployee/side-quest-complete.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GothamCityEmployee/side-quest-complete/issues"
+  },
+  "homepage": "https://github.com/GothamCityEmployee/side-quest-complete#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "resend": "^6.10.0",
+    "square": "^44.0.1"
+  }
+}
