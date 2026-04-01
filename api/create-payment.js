@@ -4,6 +4,7 @@
 
 const { SquareClient, SquareEnvironment } = require('square');
 const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
 
 const square = new SquareClient({
   token: process.env.SQUARE_ACCESS_TOKEN,
@@ -17,19 +18,32 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Send email via Resend HTTP API (no npm dependency needed)
+// Send email via Gmail SMTP
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
 async function sendEmail({ to, subject, html }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) { console.error('Gmail credentials missing'); return; }
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `"Side Quest Complete" <${user}>`,
+    to,
+    subject,
+    html,
   });
 }
 
 const STORE_EMAIL = 'sidequestcompletellc@gmail.com';
-const FROM_EMAIL  = 'Side Quest Complete <onboarding@resend.dev>'; // update to orders@sidequestcomplete.com once domain verified in Resend
+const FROM_EMAIL  = 'sidequestcompletellc@gmail.com';
 
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
