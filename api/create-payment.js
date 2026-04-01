@@ -2,16 +2,14 @@
 // Accepts a Square payment nonce from the frontend and charges the card.
 // Also decrements inventory in Supabase and sends order notification emails.
 
-const squarePkg = require('square');
-const Client = squarePkg.Client || squarePkg.default?.Client;
-const Environment = squarePkg.Environment || squarePkg.default?.Environment || { Production: 'production', Sandbox: 'sandbox' };
+const { SquareClient, SquareEnvironment } = require('square');
 const { createClient } = require('@supabase/supabase-js');
 
-const square = new Client({
-  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+const square = new SquareClient({
+  token: process.env.SQUARE_ACCESS_TOKEN,
   environment: process.env.SQUARE_ENV === 'production'
-    ? Environment.Production
-    : Environment.Sandbox,
+    ? SquareEnvironment.Production
+    : SquareEnvironment.Sandbox,
 });
 
 const supabase = createClient(
@@ -140,18 +138,18 @@ module.exports = async function handler(req, res) {
 
   try {
     // ── Charge the card via Square ────────────────────────────────────────
-    const { result } = await square.paymentsApi.createPayment({
+    const paymentResponse = await square.payments.create({
       sourceId,
       idempotencyKey: orderId,
       amountMoney: {
-        amount: Math.round(amount * 100),
+        amount: BigInt(Math.round(amount * 100)),
         currency,
       },
       note: `Side Quest Complete — Order ${orderId}`,
       buyerEmailAddress: email || undefined,
     });
 
-    const payment = result.payment;
+    const payment = paymentResponse.payment;
 
     if (payment.status !== 'COMPLETED') {
       return res.status(400).json({ error: 'Payment not completed', status: payment.status });
