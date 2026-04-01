@@ -614,6 +614,10 @@
     <div class="step-panel" id="panel-3">
       <h2 class="panel-title">Payment</h2>
 
+      <!-- Apple Pay / Google Pay via Square -->
+      <div id="square-apple-pay-container" style="margin-bottom:12px;display:none;"></div>
+      <div id="digital-wallet-divider" style="display:none;text-align:center;margin:12px 0;color:#555;font-size:12px;letter-spacing:0.1em;">— OR PAY WITH CARD —</div>
+
       <!-- Square Web Payments SDK card form -->
       <div id="square-card-container" style="margin-bottom:16px;"></div>
       <div id="square-payment-error" style="color:#ff4444;font-size:13px;margin-bottom:12px;display:none;"></div>
@@ -884,6 +888,44 @@
     async function initSquare() {
       if (!window.Square) { console.error('Square SDK not loaded'); return; }
       const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+
+      // ── Apple Pay / Google Pay ────────────────────────────────────
+      try {
+        const sub = getSubtotal();
+        const discounted = Math.max(0, sub - couponDiscount);
+        const ship = getShipping(discounted);
+        const tax  = getTax(discounted, ship);
+        const total = discounted + ship + tax;
+
+        const paymentRequest = payments.paymentRequest({
+          countryCode: 'US',
+          currencyCode: 'USD',
+          total: {
+            amount: String(total.toFixed(2)),
+            label: 'Side Quest Complete',
+          },
+        });
+
+        const applePay = await payments.applePay(paymentRequest);
+        const appleContainer = document.getElementById('square-apple-pay-container');
+        const divider = document.getElementById('digital-wallet-divider');
+        await applePay.attach('#square-apple-pay-container');
+        appleContainer.style.display = 'block';
+        divider.style.display = 'block';
+
+        // Handle Apple Pay token
+        applePay.addEventListener('ontokenization', async (event) => {
+          const { tokenResult } = event.detail;
+          if (tokenResult.status === 'OK') {
+            await submitOrder(tokenResult.token);
+          }
+        });
+      } catch(e) {
+        // Apple Pay not available on this device/browser — hide silently
+        console.log('Apple Pay not available:', e.message);
+      }
+
+      // ── Card form ─────────────────────────────────────────────────
       squareCard = await payments.card({
         style: {
           input: { color: '#e8e8e8', backgroundColor: '#222', fontSize: '14px' },
@@ -902,70 +944,47 @@
       if (n === 3 && !squareCard) initSquare();
     };
 
-    // ── Place order ──
-    document.getElementById('btn-place-order').addEventListener('click', async function() {
-      const btn = document.getElementById('btn-place-order');
+    // ── Shared order submission ───────────────────────────────────────
+    async function submitOrder(sourceId) {
       const errEl = document.getElementById('square-payment-error');
-      btn.disabled = true;
-      btn.textContent = 'Processing...';
+      const btn   = document.getElementById('btn-place-order');
+      if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
       errEl.style.display = 'none';
 
-      const sub   = getSubtotal();
+      const sub        = getSubtotal();
       const discounted = Math.max(0, sub - couponDiscount);
-      const ship  = getShipping(discounted);
-      const tax   = getTax(discounted, ship);
-      const total = discounted + ship + tax;
+      const ship       = getShipping(discounted);
+      const tax        = getTax(discounted, ship);
+      const total      = discounted + ship + tax;
 
       const shippingAddress = {
-        firstName: document.getElementById('s-first')?.value  || '',
-        lastName:  document.getElementById('s-last')?.value   || '',
+        firstName: document.getElementById('s-first')?.value   || '',
+        lastName:  document.getElementById('s-last')?.value    || '',
         address:   document.getElementById('s-address')?.value || '',
-        city:      document.getElementById('s-city')?.value   || '',
-        state:     document.getElementById('s-state')?.value  || '',
-        zip:       document.getElementById('s-zip')?.value    || '',
+        city:      document.getElementById('s-city')?.value    || '',
+        state:     document.getElementById('s-state')?.value   || '',
+        zip:       document.getElementById('s-zip')?.value     || '',
       };
-      const email = document.getElementById('s-email')?.value || '';
+      const email   = document.getElementById('s-email')?.value || '';
       const orderId = 'SQC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000);
+      const userId  = currentUser?.id || null;
 
       try {
-        // Tokenize card via Square SDK
-        if (!squareCard) throw new Error('Payment form not ready. Please wait a moment and try again.');
-        const tokenResult = await squareCard.tokenize();
-        if (tokenResult.status !== 'OK') {
-          const msg = tokenResult.errors?.map(e => e.message).join(', ') || 'Card error';
-          throw new Error(msg);
-        }
-
-        // Use user from account gate
-        const userId = currentUser?.id || null;
-
-        // Snapshot cart for confirmation display
         localStorage.setItem('sqc-cart-snapshot', JSON.stringify(cart));
 
-        // Call our serverless API to charge the card + save order + decrement inventory
         const resp = await fetch('/api/create-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sourceId: tokenResult.token,
-            amount: total,
-            orderId,
-            items: cart,
-            email,
-            shippingAddress,
-            userId,
-          }),
+          body: JSON.stringify({ sourceId, amount: total, orderId, items: cart, email, shippingAddress, userId }),
         });
 
         const result = await resp.json();
         if (!result.success) throw new Error(result.error || 'Payment failed');
 
-        // Clear cart + reservation
         cart = [];
         saveCart();
         localStorage.removeItem('sqc-cart-expiry');
 
-        // Render confirmation
         document.getElementById('confirm-order-num').textContent = 'Order #' + orderId;
         document.getElementById('confirm-total').textContent = fmt(total);
         const savedItems = JSON.parse(localStorage.getItem('sqc-cart-snapshot') || '[]');
@@ -978,9 +997,31 @@
             </div>
           `).join('');
         }
-
         goToStep(4);
 
+      } catch(e) {
+        errEl.textContent = e.message;
+        errEl.style.display = 'block';
+        if (btn) { btn.disabled = false; btn.textContent = 'Place Order →'; }
+      }
+    }
+
+    // ── Place order (card) ──
+    document.getElementById('btn-place-order').addEventListener('click', async function() {
+      const btn   = document.getElementById('btn-place-order');
+      const errEl = document.getElementById('square-payment-error');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+      errEl.style.display = 'none';
+
+      try {
+        if (!squareCard) throw new Error('Payment form not ready. Please wait a moment and try again.');
+        const tokenResult = await squareCard.tokenize();
+        if (tokenResult.status !== 'OK') {
+          const msg = tokenResult.errors?.map(e => e.message).join(', ') || 'Card error';
+          throw new Error(msg);
+        }
+        await submitOrder(tokenResult.token);
       } catch(e) {
         errEl.textContent = e.message;
         errEl.style.display = 'block';
