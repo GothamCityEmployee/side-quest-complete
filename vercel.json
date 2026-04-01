@@ -7,13 +7,5 @@
       "source": "/.well-known/apple-developer-merchantid-domain-association",
       "destination": "/api/apple-pay-verification"
     }
-  ],
-  "redirects": [
-    {
-      "source": "/.well-known/:path*",
-      "has": [{ "type": "host", "value": "sidequestcomplete.com" }],
-      "destination": "https://sidequestcomplete.com/.well-known/:path*",
-      "permanent": false
-    }
   ]
 }

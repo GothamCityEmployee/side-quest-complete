@@ -4,6 +4,7 @@ const HEX = '7B227073704964223A2242383642463746383933373735353242343346373441324
 module.exports = function handler(req, res) {
   const buf = Buffer.from(HEX, 'hex');
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', 'attachment; filename="apple-developer-merchantid-domain-association"');
   res.setHeader('Content-Length', buf.length);
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).end(buf);
