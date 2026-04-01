@@ -8,7 +8,9 @@
       "headers": [
         { "key": "Content-Type", "value": "application/json" },
         { "key": "Content-Encoding", "value": "identity" },
-        { "key": "Cache-Control", "value": "no-store" }
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Content-Disposition", "value": "attachment" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
   ]
