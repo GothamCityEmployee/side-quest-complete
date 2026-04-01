@@ -4,7 +4,6 @@
 
 const { Client, Environment } = require('square');
 const { createClient } = require('@supabase/supabase-js');
-const { Resend } = require('resend');
 
 const square = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
@@ -18,7 +17,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Send email via Resend HTTP API (no npm dependency needed)
+async function sendEmail({ to, subject, html }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+  });
+}
 
 const STORE_EMAIL = 'sidequestcompletellc@gmail.com';
 const FROM_EMAIL  = 'Side Quest Complete <onboarding@resend.dev>'; // update to orders@sidequestcomplete.com once domain verified in Resend
@@ -187,8 +195,7 @@ module.exports = async function handler(req, res) {
     const emailData = { orderId, items: orderItems, subtotal, shipping, total: amount, email, shippingAddress, paymentId: payment.id };
 
     // Store notification
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: STORE_EMAIL,
       subject: `🎮 New Order ${orderId} — ${fmt(amount)}`,
       html: storeEmailHtml(emailData),
@@ -196,8 +203,7 @@ module.exports = async function handler(req, res) {
 
     // Customer confirmation
     if (email) {
-      await resend.emails.send({
-        from: FROM_EMAIL,
+      await sendEmail({
         to: email,
         subject: `Order Confirmed! ${orderId} — Side Quest Complete`,
         html: customerEmailHtml(emailData),
