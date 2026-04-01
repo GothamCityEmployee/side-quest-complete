@@ -2,12 +2,10 @@
   "installCommand": "npm install",
   "buildCommand": "",
   "outputDirectory": ".",
-  "headers": [
+  "rewrites": [
     {
       "source": "/.well-known/apple-developer-merchantid-domain-association",
-      "headers": [
-        { "key": "Content-Type", "value": "application/json" }
-      ]
+      "destination": "/api/apple-pay-verification"
     }
   ]
 }
