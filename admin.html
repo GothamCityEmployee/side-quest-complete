@@ -432,6 +432,10 @@
       <label style="margin-top:4px">Or enter image URL manually</label>
       <input type="text" id="f-img" placeholder="https://... or images/products/product-25.jpg" oninput="syncImgPreview()" />
     </div>
+    <div class="form-group">
+      <label>Quantity</label>
+      <input type="number" id="f-quantity" placeholder="1" min="0" step="1" value="1" />
+    </div>
     <div class="toggle-row">
       <label class="toggle-label">
         <input type="checkbox" id="f-stock" checked /> In Stock
@@ -602,6 +606,7 @@
       bg:          r.bg || 'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
       emoji:       r.emoji || '🎮',
       badge:       r.badge,
+      quantity:    r.quantity ?? 1,
       inStock:     r.in_stock,
       featured:    r.featured,
       description: r.description || '',
@@ -688,6 +693,7 @@
     if (imgFile) imgFile.value = '';
     const imgPreview = document.getElementById('f-img-preview');
     if (imgPreview) { if (p?.image) showImgPreview(p.image); else imgPreview.style.display = 'none'; }
+    document.getElementById('f-quantity').value   = p?.quantity ?? 1;
     document.getElementById('f-stock').checked   = p ? !!p.inStock : true;
     document.getElementById('f-featured').checked = p ? !!p.featured : false;
     calcProfit();
@@ -758,6 +764,7 @@
       price,
       description:   document.getElementById('f-desc').value.trim(),
       image_url:     document.getElementById('f-img').value.trim() || null,
+      quantity:      parseInt(document.getElementById('f-quantity').value) || 1,
       in_stock:      document.getElementById('f-stock').checked,
       featured:      document.getElementById('f-featured').checked,
       emoji:         '🎮',
