@@ -2,7 +2,9 @@
 // Accepts a Square payment nonce from the frontend and charges the card.
 // Also decrements inventory in Supabase and sends order notification emails.
 
-const { Client, Environment } = require('square');
+const squarePkg = require('square');
+const Client = squarePkg.Client || squarePkg.default?.Client;
+const Environment = squarePkg.Environment || squarePkg.default?.Environment || { Production: 'production', Sandbox: 'sandbox' };
 const { createClient } = require('@supabase/supabase-js');
 
 const square = new Client({
